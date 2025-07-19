@@ -17,6 +17,18 @@ import { ExpressAdapter } from "@bull-board/express";
 
 const app: Application = express();
 const prisma = new PrismaClient();
+ const corsOptions = {
+  origin: [
+   
+    "https://sericiosmans-dashboard.vercel.app",
+    "http://localhost:3000",
+    "http://admin.serviciosremans.com"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
 
 // Middleware setup
 prisma
@@ -33,7 +45,7 @@ app.use(
   handleWebHook
 );
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const uploadDir = path.join(process.cwd(), "uploads");
