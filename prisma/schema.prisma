@@ -1,0 +1,232 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  fullName String
+
+  email String @unique
+
+  role     UserRole
+  password String
+
+  profileImage String @default("")
+
+  sentMessages       PrivateMessage[] @relation("SentMessages")
+  receivedMessages   PrivateMessage[] @relation("ReceivedMessages")
+  user1Convarsion    Conversation[]   @relation("User1Convarsion")
+  user2Convarsion    Conversation[]   @relation("User2Convarsion")
+  admin              Admin?
+  isOtpVerify        Boolean          @default(false)
+  profileDetails     Boolean          @default(false)
+  Notifications      Notifications[]
+  reciveNotificaiton Boolean          @default(false)
+  fcmToken           String?
+  isSubscription     Boolean          @default(false)
+
+  status UserStatus @default(ACTIVE)
+  Otp    Otp[]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  providerProfile ProviderProfile?
+  facilityProfile FacilityProfile?
+
+  @@map("users")
+}
+
+model Admin {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  nickName String @unique
+  password String
+  email    String @unique
+  userId   String @unique @db.ObjectId
+  user     User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Otp {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  otpCode   String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("otps")
+}
+
+model ProviderProfile {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  provider      Provider
+  npiNumber     String
+  licenceNumber String
+  state         String
+  certification Certification
+  stateLicenced StateLicence
+  document      String
+
+  gallery           String[] @default([])
+  selfie            String   @default("")
+  imageVerification Boolean  @default(false)
+  userId            String   @unique @db.ObjectId
+  user              User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  providerAvailability providerAvailability?
+
+  @@map("providerProfile")
+}
+
+model FacilityProfile {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @unique @db.ObjectId
+
+  gallery           String[] @default([])
+  selfie            String   @default("")
+  imageVerification Boolean  @default(false)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("facilityProfile")
+}
+
+model providerAvailability {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  month  Month
+  date   DateTime[]
+  slot   String[]
+  area   String
+  userId String          @unique @db.ObjectId
+  user   ProviderProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tecnicionAvailability")
+}
+
+model PrivateMessage {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  senderId       String       @db.ObjectId
+  receiverId     String       @db.ObjectId
+  content        String?
+  imageUrl       String?
+  conversationId String       @db.ObjectId
+  read           Boolean      @default(false)
+  sender         User?        @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver       User?        @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  Conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@map("private_messages")
+}
+
+model Conversation {
+  id             String             @id @default(auto()) @map("_id") @db.ObjectId
+  user1Id        String             @db.ObjectId
+  user2Id        String             @db.ObjectId
+  lastMessage    String?
+  user1          User?              @relation("User1Convarsion", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2          User?              @relation("User2Convarsion", fields: [user2Id], references: [id], onDelete: Cascade)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  status         ConversationStatus @default(ACTIVE)
+  privateMessage PrivateMessage[]
+
+  @@unique([user1Id, user2Id])
+  @@map("conversations")
+}
+
+model Notifications {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  receiverId String   @db.ObjectId
+  body       String
+  title      String
+  user       User     @relation(fields: [receiverId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  DELETED
+  PENDING
+}
+
+enum UserRole {
+  ADMIN
+  PROVIDER
+  FACILITY
+}
+
+enum Provider {
+  CRNA
+  AA
+  MD_DO
+}
+
+enum Certification {
+  BLS
+  ACLS
+  PALS
+  DIPLOMA
+}
+
+enum StateLicence {
+  CALIFORNIA
+  TEXAS
+  NEW_WORK
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Month {
+  JANUARY
+  FEBRUARY
+  MARCH
+  APRIL
+  MAY
+  JUNE
+  JULY
+  AUGUST
+  SEPTEMBER
+  OCTOBER
+  NOVEMBER
+  DECEMBER
+}
+
+enum ConversationStatus {
+  ACTIVE
+  DEACTIVE
+}
+
+enum SOCIALLOGINTYPES {
+  GOOGLE
+  EMAIL_PASSWORD
+}
