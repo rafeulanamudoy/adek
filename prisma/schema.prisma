@@ -38,6 +38,7 @@ model User {
   updatedAt       DateTime         @updatedAt
   providerProfile ProviderProfile?
   facilityProfile FacilityProfile?
+  JobPost         JobPost[]
 
   @@map("users")
 }
@@ -69,59 +70,112 @@ model Otp {
 }
 
 model ProviderProfile {
-  id            String        @id @default(auto()) @map("_id") @db.ObjectId
-  provider      Provider
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  provider      Provider[]
   npiNumber     String
   licenceNumber String
   state         String
-  certification Certification
-  stateLicenced StateLicence
+  certification Certification[]
+  stateLicenced StateLicence[]
   document      String
 
-  gallery           String[] @default([])
-  selfie            String   @default("")
-  imageVerification Boolean  @default(false)
-  userId            String   @unique @db.ObjectId
-  user              User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String               @unique @db.ObjectId
+  user               User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseTypePreference CaseTypePreference[]
+  callRequest        Boolean              @default(true)
+  radius             Float
 
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  providerAvailability providerAvailability?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  providerAvailability providerAvailability[]
 
   @@map("providerProfile")
+}
+
+model providerAvailability {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  date DateTime
+
+  startTime DateTime
+  endTime   DateTime
+  profileId String          @db.ObjectId
+  provider  ProviderProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@map("providerAvailability")
 }
 
 model FacilityProfile {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  userId String @unique @db.ObjectId
+  facilityName String
+  address      String
+  facilityType FacilityType
+  ehrSystem    EhrSystem
+  caseType     CaseType
 
-  gallery           String[] @default([])
-  selfie            String   @default("")
-  imageVerification Boolean  @default(false)
+  orLoad            String
+  credentialDetails Certification
+  md_do             MD_DO
+  userId            String        @unique @db.ObjectId
+  user              User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  HrDetails HrDetails[]
 
   @@map("facilityProfile")
 }
 
-model providerAvailability {
+model HrDetails {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  role              HrRole
+  email             String
+  phoneNumber       String
+  facilityProfileId String          @db.ObjectId
+  facilityProfile   FacilityProfile @relation(fields: [facilityProfileId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@map("hrDetails")
+}
+
+model JobPost {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  month  Month
-  date   DateTime[]
-  slot   String[]
-  area   String
-  userId String          @unique @db.ObjectId
-  user   ProviderProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  jobRole        Provider
+  about          String
+  qualification  String
+  minPriceRange  Int
+  maxPriceRange  Int
+  experience     Float
+  totalCandidate Int
+  schedule       Schedule[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("tecnicionAvailability")
+  @@map("jobPost")
+}
+
+model Schedule {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  jobPostId String  @db.ObjectId
+  jobPost   JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
+
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("schedule")
 }
 
 model PrivateMessage {
@@ -169,11 +223,41 @@ model Notifications {
   @@map("notifications")
 }
 
+enum FacilityType {
+  SURGICAL_CENTER
+}
+
+enum HrRole {
+  HR_MANAGER
+}
+
+enum EhrSystem {
+  EPIC
+}
+
+enum CaseType {
+  GENERAL
+}
+
 enum UserStatus {
   ACTIVE
   BLOCKED
   DELETED
   PENDING
+}
+
+enum TimeSlot {
+  MORNING
+  EVENING
+  NIGHT
+  WEEKENDS
+}
+
+enum CaseTypePreference {
+  CARDIAC
+  PEDIATRICS
+  OBSTETRICS
+  TRAUMA
 }
 
 enum UserRole {
@@ -188,11 +272,17 @@ enum Provider {
   MD_DO
 }
 
+enum MD_DO {
+  STATE_LICENSE
+  BOARD_CERT
+}
+
 enum Certification {
   BLS
   ACLS
   PALS
   DIPLOMA
+  LICENCE
 }
 
 enum StateLicence {

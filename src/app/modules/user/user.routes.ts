@@ -10,6 +10,7 @@ import auth from "../../middlewares/auth";
 import religiousDetialsVerify from "../../middlewares/religiousDetialsVerify";
 import partnerPreference from "../../middlewares/partnerPreference";
 import { fileUploader } from "../../../helpers/fileUploader";
+import { UserRole } from "@prisma/client";
 // import { injectFileIntoBody } from "../../middlewares/injectFile";
 
 const router = express.Router();
@@ -19,6 +20,20 @@ router.post(
 
   validateRequest(userValidation.userRegisterValidationSchema),
   userController.createUser
+);
+router.patch(
+  "/update-provider-profile",
+  auth(UserRole.PROVIDER),
+  fileUploader.providerDocument,
+  parseBodyData,
+  validateRequest(userValidation.updateProviderProfile),
+  userController.updateProviderProfile
+);
+router.patch(
+  "/update-facility-profile",
+  auth(UserRole.FACILITY),
+  validateRequest(userValidation.updateFacilityProfile),
+  userController.updateFaciltyProfile
 );
 
 export const userRoute = router;

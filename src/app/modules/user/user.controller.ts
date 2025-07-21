@@ -4,6 +4,10 @@ import { Request, Response } from "express";
 import catchAsync from "../../../shared/catchAsync";
 import { userService } from "./user.service";
 import sendResponse from "../../../shared/sendResponse";
+import ApiError from "../../../errors/ApiErrors";
+import httpStatus from "http-status";
+import uploadToDigitalOcean from "../../../helpers/uploadToDigitalOcean";
+import { deleteFromDigitalOcean } from "../../../helpers/deleteFromDigitalOccean";
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.createUser(req.body);
@@ -15,7 +19,55 @@ const createUser = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const updateProviderProfile = catchAsync(
+  async (req: Request, res: Response) => {
+    let uploadedFileUrl: string | null = null;
+
+    try {
+      const file = req.file;
+      if (!file) {
+        throw new ApiError(httpStatus.NOT_FOUND, "File not found");
+      }
+
+      uploadedFileUrl = await uploadToDigitalOcean(file);
+
+      req.body.document = uploadedFileUrl;
+
+      const result = await userService.updateProviderProfile(
+        req.body,
+        req.user.id
+      );
+
+      sendResponse(res, {
+        statusCode: 201,
+        success: true,
+        message: "Provider profile updated successfully",
+        data: result,
+      });
+    } catch (error) {
+      if (uploadedFileUrl) {
+        try {
+          await deleteFromDigitalOcean(uploadedFileUrl);
+        } catch (deleteErr) {
+          console.error("Failed to delete uploaded file:", deleteErr);
+        }
+      }
+    }
+  }
+);
+const updateFaciltyProfile = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.updateFaciltyProfile(req.body, req.user.id);
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "facility profile update successfully",
+    data: result,
+  });
+});
 
 export const userController = {
   createUser,
+  updateProviderProfile,
+  updateFaciltyProfile,
 };
