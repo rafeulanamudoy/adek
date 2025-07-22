@@ -66,8 +66,23 @@ const updateFaciltyProfile = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getUserProfile = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.getUserProfile(req.user.id);
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User profile not found");
+  }
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "User profile retrieved successfully",
+    data: result,
+  });
+});
+
 export const userController = {
   createUser,
   updateProviderProfile,
   updateFaciltyProfile,
+  getUserProfile,
 };

@@ -31,7 +31,34 @@ const getJobpost = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const searchJob = catchAsync(async (req: Request, res: Response) => {
+  const { searchTerm } = req.query;
+  const response = await jobService.searchJob(
+    req.user.id,
+    searchTerm as string
+  );
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "job search results",
+    data: response,
+  });
+});
+
+const getAllJobPosts = catchAsync(async (req: Request, res: Response) => {
+  const response = await jobService.getAllJobPosts();
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "All job posts retrieved successfully",
+    data: response,
+  });
+});
+
 export const jobController = {
   createJob,
   getJobpost,
+  searchJob,
+  getAllJobPosts,
 };

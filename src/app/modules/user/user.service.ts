@@ -153,8 +153,28 @@ const updateFaciltyProfile = async (payload: any, userId: string) => {
   return result;
 };
 
+const getUserProfile = async (userId: string) => {
+  const result = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    include: {
+      providerProfile: true,
+      facilityProfile: true,
+    },
+  });
+
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User profile not found");
+  }
+
+  return result;
+};
+  
+
 export const userService = {
   createUser,
   updateProviderProfile,
   updateFaciltyProfile,
+  getUserProfile,
 };

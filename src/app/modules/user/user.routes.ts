@@ -36,4 +36,10 @@ router.patch(
   userController.updateFaciltyProfile
 );
 
+router.get(
+  "/get-profile",
+  auth(UserRole.PROVIDER, UserRole.FACILITY),
+  userController.getUserProfile
+);
+
 export const userRoute = router;
