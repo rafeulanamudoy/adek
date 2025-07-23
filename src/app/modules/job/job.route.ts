@@ -22,4 +22,10 @@ router.get(
   jobController.getAllJobPosts
 );
 
+router.get(
+  "/:id",
+  auth(UserRole.PROVIDER, UserRole.FACILITY),
+  jobController.getJobById
+);
+
 export const jobRoute = router;

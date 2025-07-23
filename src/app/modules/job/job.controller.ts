@@ -56,9 +56,21 @@ const getAllJobPosts = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getJobById = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const response = await jobService.getJobById(id);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Job post retrieved successfully",
+    data: response,
+  });
+});
+
 export const jobController = {
   createJob,
   getJobpost,
   searchJob,
   getAllJobPosts,
+  getJobById,
 };

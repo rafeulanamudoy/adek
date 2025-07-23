@@ -1,6 +1,8 @@
 import { JobPost } from "@prisma/client";
 import searchAndPaginate from "../../../helpers/searchAndPaginate";
 import prisma from "../../../shared/prisma";
+import ApiError from "../../../errors/ApiErrors";
+import httpStatus from "http-status";
 
 const createJob = async (payload: any, userId: string) => {
   const [startHour, startMinute] = payload.startTime.split(":").map(Number);
@@ -139,6 +141,32 @@ const searchJob = async (userId: string, searchTerm: string) => {
   return jobs;
 };
 
+const getJobById = async (id: string) => {
+  const job = await prisma.jobPost.findUnique({
+    where: { id },
+    include: {
+      schedule: true,
+        user: {
+        select:{
+          facilityProfile:{
+            select: {
+              facilityName: true,
+              address: true,
+              facilityType: true,
+            },
+          }
+        }
+      }
+    },
+  });
+
+  if (!job) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Job not found");
+  }
+
+  return job;
+};
+
 const getAllJobPosts = async () => {
   const jobs = await prisma.jobPost.findMany({
     include: {
@@ -153,4 +181,5 @@ export const jobService = {
   getJobpost,
   getAllJobPosts,
   searchJob,
+  getJobById,
 };
