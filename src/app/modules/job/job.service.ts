@@ -141,27 +141,36 @@ const searchJob = async (userId: string, searchTerm: string) => {
   return jobs;
 };
 
-const getJobById = async (id: string) => {
+const getJobById = async (id: string, userId: string) => {
   const job = await prisma.jobPost.findUnique({
     where: { id },
     include: {
       schedule: true,
-        user: {
-        select:{
-          facilityProfile:{
+
+      user: {
+        select: {
+          facilityProfile: {
             select: {
               facilityName: true,
               address: true,
               facilityType: true,
             },
-          }
-        }
-      }
+          },
+        },
+      },
     },
   });
 
   if (!job) {
     throw new ApiError(httpStatus.NOT_FOUND, "Job not found");
+  }
+
+  if (!job.totalClicks.includes(userId)) {
+    job.totalClicks.push(userId);
+    await prisma.jobPost.update({
+      where: { id },
+      data: { totalClicks: job.totalClicks },
+    });
   }
 
   return job;
