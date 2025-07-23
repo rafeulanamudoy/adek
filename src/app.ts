@@ -22,7 +22,8 @@ const prisma = new PrismaClient();
    
     "https://sericiosmans-dashboard.vercel.app",
     "http://localhost:3000",
-    "http://admin.serviciosremans.com"
+    "http://admin.serviciosremans.com",
+    "https://kamodoc-frontend.vercel.app"
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
