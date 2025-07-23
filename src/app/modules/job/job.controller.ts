@@ -58,7 +58,8 @@ const getAllJobPosts = catchAsync(async (req: Request, res: Response) => {
 
 const getJobById = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const response = await jobService.getJobById(id);
+  const userId = req.user.id;
+  const response = await jobService.getJobById(id, userId);
   sendResponse(res, {
     statusCode: 200,
     success: true,
