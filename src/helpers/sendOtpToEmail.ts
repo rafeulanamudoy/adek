@@ -1,13 +1,12 @@
 import prisma from "../shared/prisma";
 import generateOTP from "./generateOtp";
-import sendEmailByNodemailer from "./sendEmailNodemailer";
+import sendEmail from "./sendMailBrevo";
 
 export const sendOtpToGmail = async (existingUser: any) => {
   const otp = generateOTP();
 
-
-const OTP_EXPIRATION_TIME = 5 * 60 * 1000;
-const expiresAt = new Date(Date.now() + OTP_EXPIRATION_TIME); 
+  const OTP_EXPIRATION_TIME = 5 * 60 * 1000;
+  const expiresAt = new Date(Date.now() + OTP_EXPIRATION_TIME);
   const subject = "Your Password Reset OTP";
   const html = `<!DOCTYPE html>
    <html lang="en">
@@ -37,7 +36,7 @@ const expiresAt = new Date(Date.now() + OTP_EXPIRATION_TIME);
        </div>
    </body>
   </html>`;
-  sendEmailByNodemailer(existingUser.email, subject, html);
+  sendEmail(existingUser.email, subject, html);
   await prisma.otp.upsert({
     where: {
       userId: existingUser.id,

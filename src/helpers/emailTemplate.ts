@@ -1,10 +1,7 @@
-import sendEmail from "./sendEmailNodemailer";
+import sendEmail from "./sendMailBrevo";
 
-
-
-const forgetPasswordOtpTemplate=async(email:string,otp:string,)=>{
-
- const subject = "Your Password Reset OTP";
+const forgetPasswordOtpTemplate = async (email: string, otp: string) => {
+  const subject = "Your Password Reset OTP";
   const html = `<!DOCTYPE html>
    <html lang="en">
    <head>
@@ -34,12 +31,8 @@ const forgetPasswordOtpTemplate=async(email:string,otp:string,)=>{
    </body>
   </html>`;
   await sendEmail(email, subject, html);
+};
 
-
-}
-
-
-
-export const emailTemplate={
-    forgetPasswordOtpTemplate
-}
+export const emailTemplate = {
+  forgetPasswordOtpTemplate,
+};
