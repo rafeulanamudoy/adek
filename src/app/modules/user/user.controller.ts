@@ -33,7 +33,7 @@ const updateProviderProfile = catchAsync(
 
       req.body.document = uploadedFileUrl;
 
-      const result = await userService.updateProviderProfile(
+      const result = await userService.updateProfile(
         req.body,
         req.user.id
       );
@@ -41,7 +41,7 @@ const updateProviderProfile = catchAsync(
       sendResponse(res, {
         statusCode: 201,
         success: true,
-        message: "Provider profile updated successfully",
+        message: " profile updated successfully",
         data: result,
       });
     } catch (error) {
@@ -55,16 +55,7 @@ const updateProviderProfile = catchAsync(
     }
   }
 );
-const updateFaciltyProfile = catchAsync(async (req: Request, res: Response) => {
-  const result = await userService.updateFaciltyProfile(req.body, req.user.id);
 
-  sendResponse(res, {
-    statusCode: 201,
-    success: true,
-    message: "facility profile update successfully",
-    data: result,
-  });
-});
 
 const getUserProfile = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.getUserProfile(req.user.id);
@@ -83,6 +74,6 @@ const getUserProfile = catchAsync(async (req: Request, res: Response) => {
 export const userController = {
   createUser,
   updateProviderProfile,
-  updateFaciltyProfile,
+ 
   getUserProfile,
 };

@@ -17,19 +17,17 @@ import { ExpressAdapter } from "@bull-board/express";
 
 const app: Application = express();
 const prisma = new PrismaClient();
- const corsOptions = {
+const corsOptions = {
   origin: [
-   
     "https://sericiosmans-dashboard.vercel.app",
     "http://localhost:3000",
     "http://admin.serviciosremans.com",
-    "https://kamodoc-frontend.vercel.app"
+    "https://kamodoc-frontend.vercel.app",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };
-
 
 // Middleware setup
 prisma

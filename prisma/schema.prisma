@@ -14,7 +14,7 @@ model User {
 
   email String @unique
 
-  role     UserRole 
+  role     UserRole  @default(USER)
   password String
 
   profileImage String @default("")
@@ -25,7 +25,7 @@ model User {
   user2Convarsion    Conversation[]   @relation("User2Convarsion")
   admin              Admin?
   isOtpVerify        Boolean          @default(false)
-  profileDetails     Boolean          @default(false)
+
   Notifications      Notifications[]
   reciveNotificaiton Boolean          @default(false)
   fcmToken           String?
@@ -36,9 +36,7 @@ model User {
 
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  providerProfile ProviderProfile?
-  facilityProfile FacilityProfile?
-  JobPost         JobPost[]
+
 
   @@map("users")
 }
@@ -69,116 +67,6 @@ model Otp {
   @@map("otps")
 }
 
-model ProviderProfile {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  provider      Provider[]
-  npiNumber     String
-  licenceNumber String
-  state         String
-  certification Certification[]
-  stateLicenced StateLicence[]
-  document      String
-
-  userId             String               @unique @db.ObjectId
-  user               User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  caseTypePreference CaseTypePreference[]
-  callRequest        Boolean              @default(true)
-  radius             Float
-
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  providerAvailability providerAvailability[]
-
-  @@map("providerProfile")
-}
-
-model providerAvailability {
-  id   String   @id @default(auto()) @map("_id") @db.ObjectId
-  date DateTime
-
-  startTime DateTime
-  endTime   DateTime
-  profileId String          @db.ObjectId
-  provider  ProviderProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-
-  @@map("providerAvailability")
-}
-
-model FacilityProfile {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-
-  facilityName String
-  address      String
-  facilityType FacilityType
-  ehrSystem    EhrSystem
-  caseType     CaseType
-
-  orLoad            String
-  credentialDetails Certification
-  md_do             MD_DO
-  userId            String        @unique @db.ObjectId
-  user              User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  HrDetails HrDetails[]
-
-  @@map("facilityProfile")
-}
-
-model HrDetails {
-  id                String          @id @default(auto()) @map("_id") @db.ObjectId
-  name              String
-  role              HrRole
-  email             String
-  phoneNumber       String
-  facilityProfileId String          @db.ObjectId
-  facilityProfile   FacilityProfile @relation(fields: [facilityProfileId], references: [id], onDelete: Cascade)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  @@map("hrDetails")
-}
-
-model JobPost {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-
-  userId String @db.ObjectId
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  jobRole        Provider
-  about          String
-  qualification  String
-  minPriceRange  Int
-  maxPriceRange  Int
-  experience     Float
-  totalCandidate Int
-  schedule       Schedule[]
-  totalClicks    String[]
-  totalApplications String[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("jobPost")
-}
-
-model Schedule {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  jobPostId String  @db.ObjectId
-  jobPost   JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
-
-  date      DateTime
-  startTime DateTime
-  endTime   DateTime
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("schedule")
-}
 
 model PrivateMessage {
   id             String       @id @default(auto()) @map("_id") @db.ObjectId
@@ -225,21 +113,6 @@ model Notifications {
   @@map("notifications")
 }
 
-enum FacilityType {
-  SURGICAL_CENTER
-}
-
-enum HrRole {
-  HR_MANAGER
-}
-
-enum EhrSystem {
-  EPIC
-}
-
-enum CaseType {
-  GENERAL
-}
 
 enum UserStatus {
   ACTIVE
@@ -248,70 +121,16 @@ enum UserStatus {
   PENDING
 }
 
-enum TimeSlot {
-  MORNING
-  EVENING
-  NIGHT
-  WEEKENDS
-}
-
-enum CaseTypePreference {
-  CARDIAC
-  PEDIATRICS
-  OBSTETRICS
-  TRAUMA
-}
 
 enum UserRole {
   ADMIN
-  PROVIDER
-  FACILITY
+  USER
 }
 
-enum Provider {
-  CRNA
-  AA
-  MD_DO
-}
 
-enum MD_DO {
-  STATE_LICENSE
-  BOARD_CERT
-}
 
-enum Certification {
-  BLS
-  ACLS
-  PALS
-  DIPLOMA
-  LICENCE
-}
 
-enum StateLicence {
-  CALIFORNIA
-  TEXAS
-  NEW_WORK
-}
 
-enum Gender {
-  MALE
-  FEMALE
-}
-
-enum Month {
-  JANUARY
-  FEBRUARY
-  MARCH
-  APRIL
-  MAY
-  JUNE
-  JULY
-  AUGUST
-  SEPTEMBER
-  OCTOBER
-  NOVEMBER
-  DECEMBER
-}
 
 enum ConversationStatus {
   ACTIVE

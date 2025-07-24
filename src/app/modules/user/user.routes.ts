@@ -23,22 +23,16 @@ router.post(
 );
 router.patch(
   "/update-provider-profile",
-  auth(UserRole.PROVIDER),
+  auth(),
   fileUploader.providerDocument,
   parseBodyData,
-  validateRequest(userValidation.updateProviderProfile),
+  // validateRequest(userValidation.updateProviderProfile),
   userController.updateProviderProfile
-);
-router.patch(
-  "/update-facility-profile",
-  auth(UserRole.FACILITY),
-  validateRequest(userValidation.updateFacilityProfile),
-  userController.updateFaciltyProfile
 );
 
 router.get(
   "/get-profile",
-  auth(UserRole.PROVIDER, UserRole.FACILITY),
+  auth(),
   userController.getUserProfile
 );
 
