@@ -40,7 +40,7 @@ const createUser = async (payload: User) => {
 };
 
 const updateProfile = async (payload: any, userId: string) => {
-  console.log(payload,"chekc payload")
+
 
   const result = await prisma.user.update({
     where: {

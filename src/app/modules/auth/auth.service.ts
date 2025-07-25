@@ -95,55 +95,6 @@ const forgetPasswordToGmail = async (email: string) => {
   };
 };
 
-// const forgetPasswordToPhone = async (phoneNumber: string) => {
-//   const existingUser = await prisma.user.findUnique({
-//     where: {
-//       phoneNumber: phoneNumber,
-//     },
-//   });
-//   if (!existingUser) {
-//     throw new ApiError(httpStatus.NOT_FOUND, "user not found");
-//   }
-//   const otp = generateOTP();
-//   const OTP_EXPIRATION_TIME = 5 * 60 * 1000;
-//   const expiresAt = new Date(Date.now() + OTP_EXPIRATION_TIME);
-//   // otpQueuePhone.add(
-//   //   "send-otp-to-phone",
-//   //   {
-//   //     phoneNumber: existingUser.phoneNumber,
-//   //     otpCode: otp,
-//   //   },
-//   //   {
-//   //     jobId: `${existingUser.id}-${Date.now()}`,
-//   //     removeOnComplete: true,
-//   //     delay: 0,
-//   //     backoff: 5000,
-//   //     attempts: 3,
-//   //     removeOnFail: true,
-//   //   }
-//   // );
-//   await prisma.otp.upsert({
-//     where: {
-//       userId: existingUser.id,
-//     },
-//     create: {
-//       userId: existingUser.id,
-//       expiresAt: expiresAt,
-//       otpCode: otp,
-//     },
-//     update: {
-//       otpCode: otp,
-//       expiresAt: expiresAt,
-//     },
-//   });
-
-//   return jwtHelpers.generateToken(
-//     { id: existingUser.id },
-//     config.otpSecret.verify_otp_secret as Secret,
-//     "5m"
-//   );
-// };
-
 const verifyOtp = async (
   otp: string,
   userId: string,
@@ -186,27 +137,39 @@ const verifyOtp = async (
 
   switch (reason) {
     case OtpReason.RESET_PASSWORD:
-      return jwtHelpers.generateToken(
-        { id: userId },
-        config.jwt.jwt_secret as Secret,
-        config.jwt.expires_in
-      );
+      return {
+        token: jwtHelpers.generateToken(
+          { id: userId },
+          config.jwt.jwt_secret as Secret,
+          config.jwt.expires_in
+        ),
+        isProfile: existingOtp.user.isProfile,
+      };
     case OtpReason.FORGET_PASSWORD:
-      return jwtHelpers.generateToken(
-        { id: userId },
-        config.otpSecret.reset_password_secret as Secret,
-        config.jwt.expires_in
-      );
+      return {
+        token: jwtHelpers.generateToken(
+          { id: userId },
+          config.otpSecret.reset_password_secret as Secret,
+          config.jwt.expires_in
+        ),
+        isProfile: existingOtp.user.isProfile,
+      };
     case OtpReason.SIGNUP_OTP_SECRET:
-      return jwtHelpers.generateToken(
-        { id: userId },
-        config.otpSecret.signup_otp_secret as Secret
-      );
+      return {
+        token: jwtHelpers.generateToken(
+          { id: userId },
+          config.otpSecret.signup_otp_secret as Secret
+        ),
+        isProfile: existingOtp.user.isProfile,
+      };
     case OtpReason.LOGIN:
-      return jwtHelpers.generateToken(
-        { id: userId },
-        config.jwt.jwt_secret as Secret
-      );
+      return {
+        token: jwtHelpers.generateToken(
+          { id: userId },
+          config.jwt.jwt_secret as Secret
+        ),
+        isProfile: existingOtp.user.isProfile,
+      };
     default:
       throw new ApiError(httpStatus.BAD_REQUEST, "Invalid OTP reason");
   }

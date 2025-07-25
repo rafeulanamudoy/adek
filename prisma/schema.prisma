@@ -14,35 +14,91 @@ model User {
 
   email String @unique
 
-  role     UserRole  @default(USER)
+  role     UserRole @default(USER)
   password String
 
   profileImage String @default("")
 
-  sentMessages       PrivateMessage[] @relation("SentMessages")
-  receivedMessages   PrivateMessage[] @relation("ReceivedMessages")
-  user1Convarsion    Conversation[]   @relation("User1Convarsion")
-  user2Convarsion    Conversation[]   @relation("User2Convarsion")
-  admin              Admin?
-  isOtpVerify        Boolean          @default(false)
+  sentMessages     PrivateMessage[] @relation("SentMessages")
+  receivedMessages PrivateMessage[] @relation("ReceivedMessages")
+  user1Convarsion  Conversation[]   @relation("User1Convarsion")
+  user2Convarsion  Conversation[]   @relation("User2Convarsion")
+  admin            Admin?
+  isOtpVerify      Boolean          @default(false)
+  isProfile        Boolean          @default(false)
 
   Notifications      Notifications[]
-  reciveNotificaiton Boolean          @default(false)
+  reciveNotificaiton Boolean         @default(false)
   fcmToken           String?
-  isSubscription     Boolean          @default(false)
+  isSubscription     Boolean         @default(false)
 
-  status UserStatus @default(ACTIVE)
+  status UserStatus @default(PENDING)
   Otp    Otp[]
 
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Profile   Profile?
 
   @@map("users")
 }
 
+model Profile {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  branch          Branch
+  serviceYear     ServiceYear
+  goal            Goal[]          @default([])
+  cause           Cause
+  emotionalReason EmotionalReason
+  mood            Mood[]          @default([])
+
+  userId    String   @unique @db.ObjectId
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profile")
+}
+
+model Article {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  mood            Mood[]
+  goal            Goal[]
+  cause           Cause[]
+  emotionalReason EmotionalReason[]
+  title           String
+  time            String
+  content         Json
+  articleImage    String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("article")
+}
+
+model GroundSound {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  mood            Mood
+  goal            Goal[]
+  cause           Cause[]
+  emotionalReason EmotionalReason[]
+  soundName       String
+  authority       String
+  time            String
+  soundAudioFile  String
+  soundImage               String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("groundSound")
+}
+
 model Admin {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
   nickName String @unique
   password String
   email    String @unique
@@ -66,7 +122,6 @@ model Otp {
 
   @@map("otps")
 }
-
 
 model PrivateMessage {
   id             String       @id @default(auto()) @map("_id") @db.ObjectId
@@ -113,7 +168,6 @@ model Notifications {
   @@map("notifications")
 }
 
-
 enum UserStatus {
   ACTIVE
   BLOCKED
@@ -121,16 +175,62 @@ enum UserStatus {
   PENDING
 }
 
-
 enum UserRole {
   ADMIN
   USER
 }
 
+enum Branch {
+  NAVY
+  AIR_FORCE
+  MARINE_CROPS
+  COAST_GUARD
+  SPACE_FORCE
+}
 
+enum ServiceYear {
+  FOUR_TO_SEVEN_YEARS
+  EIGHT_TO_TWELVE_YEARS
+  THIRTEEN_TOTWENTY_YEARS
+  TWENTY_PLUS_YEARS
+}
 
+enum Goal {
+  MANAGE_ANXIETY
+  REDUCE_STRESS
+  IMPROVE_MOOD
+  JOIN_COMMUNITY
+  IMPROVE_SLEEP
+  BOOST_CONFIDENCE
+  OTHER
+}
 
+enum Cause {
+  RELATIONSHIP_ISSUE
+  FINANCIAL_STRESS
+  HEALTH_CONCERN
+  CHANGING_LIFESTYLE
+  CIVILIAN_LIFE_ADJUSTMENT
+  ISOLATION
+  OTHER
+}
 
+enum EmotionalReason {
+  FLASHBACKS_OR_INTRUSIVE_THOUGHTS
+  FEELING_MISUNDERSTOOD_OR_JUDGED
+  POOR_SLEEP_OR_NIGHTMARES
+  ANEXIETY_FOR_NO_CLEAR_REASON
+  GUILT_OVER_PAST_DECISIONS
+  LACK_OF_EMOTIONAL_SUPPORT
+  OTHER
+}
+
+enum Mood {
+  HAPPY
+  DEPRESSED
+  NORMAL
+  SAD
+}
 
 enum ConversationStatus {
   ACTIVE

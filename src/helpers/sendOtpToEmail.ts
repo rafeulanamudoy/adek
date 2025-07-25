@@ -5,9 +5,9 @@ import sendEmail from "./sendMailBrevo";
 export const sendOtpToGmail = async (existingUser: any) => {
   const otp = generateOTP();
 
-  const OTP_EXPIRATION_TIME = 5 * 60 * 1000;
+  const OTP_EXPIRATION_TIME = 90 * 1000;
   const expiresAt = new Date(Date.now() + OTP_EXPIRATION_TIME);
-  const subject = "Your Password Reset OTP";
+  const subject = "Your  OTP";
   const html = `<!DOCTYPE html>
    <html lang="en">
    <head>

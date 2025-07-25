@@ -33,10 +33,7 @@ const updateProviderProfile = catchAsync(
 
       req.body.document = uploadedFileUrl;
 
-      const result = await userService.updateProfile(
-        req.body,
-        req.user.id
-      );
+      const result = await userService.updateProfile(req.body, req.user.id);
 
       sendResponse(res, {
         statusCode: 201,
@@ -56,7 +53,6 @@ const updateProviderProfile = catchAsync(
   }
 );
 
-
 const getUserProfile = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.getUserProfile(req.user.id);
   if (!result) {
@@ -74,6 +70,5 @@ const getUserProfile = catchAsync(async (req: Request, res: Response) => {
 export const userController = {
   createUser,
   updateProviderProfile,
- 
   getUserProfile,
 };

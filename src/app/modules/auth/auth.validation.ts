@@ -3,6 +3,7 @@ import { z } from "zod";
 const authLoginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
+  // fcmToken: z.string().min(1, "fcm token is required"),
 });
 const verifyOtpSchema = z.object({
   otp: z.string(),

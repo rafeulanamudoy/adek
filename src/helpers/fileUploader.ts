@@ -9,11 +9,13 @@ const selfie = upload.single("selfie");
 const profileImage = upload.single("profileImage");
 const chatImage = upload.single("chatImage");
 
-const uploadUserImages = upload.fields([
-  { name: "selfie", maxCount: 1 },
-  { name: "profileImage", maxCount: 1 },
+const articleImage=upload.single("articleImage")
 
-  { name: "gallery", maxCount: 6 },
+const uploadGroundSound = upload.fields([
+  { name: "soundAudioFile", maxCount: 1 },
+  { name: "soundImage", maxCount: 1 },
+
+
 ]);
 
 const providerDocument = upload.single("document");
@@ -21,6 +23,7 @@ export const fileUploader = {
   selfie,
   profileImage,
   chatImage,
-  uploadUserImages,
+  uploadGroundSound,
   providerDocument,
+  articleImage
 };
