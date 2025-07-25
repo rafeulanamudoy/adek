@@ -10,6 +10,7 @@ const profileImage = upload.single("profileImage");
 const chatImage = upload.single("chatImage");
 
 const articleImage=upload.single("articleImage")
+const goalImage=upload.single("goalImage")
 
 const uploadGroundSound = upload.fields([
   { name: "soundAudioFile", maxCount: 1 },
@@ -25,5 +26,6 @@ export const fileUploader = {
   chatImage,
   uploadGroundSound,
   providerDocument,
-  articleImage
+  articleImage,
+  goalImage
 };

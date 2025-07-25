@@ -6,7 +6,7 @@ export const parseBodyData = (
   next: NextFunction
 ) => {
   if (req.body.bodyData) {
-    console.log(req.body.bodyData, "check body dat");
+   
     console.log(JSON.parse(req.body.bodyData));
     try {
       req.body = JSON.parse(req.body.bodyData);

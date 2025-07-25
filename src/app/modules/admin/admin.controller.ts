@@ -208,6 +208,86 @@ const deleteSingleGroundSound = catchAsync(
   }
 );
 
+const createGoal = catchAsync(async (req: Request, res: Response) => {
+  let uploadedFileUrl: string | null = null;
+  try {
+    const file = req.file;
+    if (!file) {
+      throw new ApiError(httpStatus.NOT_FOUND, "goal image is required");
+    }
+    uploadedFileUrl = await uploadToDigitalOcean(file);
+    console.log(uploadedFileUrl,"check url")
+    req.body.goalImage = uploadedFileUrl;
+    const result = await adminService.createGoal(req.body);
+
+    sendResponse(res, {
+      statusCode: 201,
+      success: true,
+      message: "goal  create successfully",
+      data: result,
+    });
+  } catch (error) {
+    if (uploadedFileUrl) {
+      try {
+        await deleteFromDigitalOcean(uploadedFileUrl);
+      } catch (deleteErr) {
+        console.error("Failed to delete uploaded file:", deleteErr);
+      }
+    }
+  }
+});
+
+const getAllGoal = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.getAllGoal();
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "all goal get Successfully",
+    data: result,
+  });
+});
+const updateSingGoal = catchAsync(async (req: Request, res: Response) => {
+  let uploadedFileUrl: string | null = null;
+  try {
+    const file = req.file;
+   
+    if (file) {
+      console.log("file logic");
+      uploadedFileUrl = await uploadToDigitalOcean(file);
+      req.body.articleImage = uploadedFileUrl;
+    }
+    const result = await adminService.updateSingGoal(
+      req.params.id,
+      req.body
+    );
+    sendResponse(res, {
+      statusCode: 201,
+      success: true,
+      message: "goal  updated  successfully",
+      data: result,
+    });
+  } catch (error) {
+    if (uploadedFileUrl) {
+      try {
+        await deleteFromDigitalOcean(uploadedFileUrl);
+      } catch (deleteErr) {
+        console.error("Failed to delete uploaded file:", deleteErr);
+      }
+    }
+  }
+});
+
+const deleteSingleGoal = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.deleteSingleGoal(req.params.id);
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: " goal delete  Successfully",
+    data: result,
+  });
+});
 export const adminController = {
   loginAdmin,
   createArticle,
@@ -218,4 +298,8 @@ export const adminController = {
   getAllGroundingSound,
   updateSingleGroundSound,
   deleteSingleGroundSound,
+  getAllGoal,
+  updateSingGoal,
+  deleteSingleGoal,
+  createGoal
 };

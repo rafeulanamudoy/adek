@@ -110,7 +110,7 @@ const createGroundingSound = async (payload: any) => {
     data: {
       ...payload,
     },
-  });
+  });  
 
   return result;
 };
@@ -141,6 +141,44 @@ const deleteSingleGroundSound = async (id: string) => {
   return result;
 };
 
+const createGoal = async (payload: any) => {
+  console.log(payload,"check payload from service file")
+  const result = await prisma.goalModel.create({
+    data: {
+      ...payload,
+    },
+  });  
+
+  return result;
+};
+const getAllGoal = async () => {
+  const result = await prisma.goalModel.findMany({});
+  return result;
+};
+const updateSingGoal = async (id: string, data: any) => {
+
+
+  const result = await prisma.goalModel.update({
+    where: {
+      id: id,
+    },
+    data: {
+      ...data,
+    },
+  });
+  return result;
+};
+
+const deleteSingleGoal = async (id: string) => {
+  const result = await prisma.goalModel.delete({
+    where: {
+      id: id,
+    },
+  });
+  return result;
+};
+
+
 export const adminService = {
   loginAdmin,
   getAllUser,
@@ -151,5 +189,9 @@ export const adminService = {
   createGroundingSound,
   updateSingleGroundSound,
   deleteSingleGroundSound,
-getAllGroundingSound
+getAllGroundingSound,
+deleteSingleGoal,
+createGoal,
+ updateSingGoal,
+ getAllGoal
 };

@@ -65,4 +65,13 @@ router.delete(
   auth(UserRole.ADMIN),
   adminController.deleteSingleGroundSound
 );
+router.post(
+  "/create-goal",
+  auth(UserRole.ADMIN),
+  fileUploader.goalImage,
+  parseBodyData,
+
+  validateRequest(adminValidation.createGoal),
+  adminController.createGoal
+);
 export const adminRoute = router;

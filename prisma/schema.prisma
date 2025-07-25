@@ -88,12 +88,33 @@ model GroundSound {
   authority       String
   time            String
   soundAudioFile  String
-  soundImage               String
+  soundImage      String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("groundSound")
+}
+
+model GoalModel {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  mood            Mood
+  goal            Goal[]
+  cause           Cause[]
+  emotionalReason EmotionalReason[]
+
+  title String
+  subtitle String
+  goalImage String
+  
+  
+  
+  createdAt DateTime @default(now())
+
+
+  updatedAt DateTime @updatedAt
+
+  @@map("goal")
 }
 
 model Admin {
