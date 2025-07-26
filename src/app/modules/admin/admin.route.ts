@@ -65,6 +65,30 @@ router.delete(
   auth(UserRole.ADMIN),
   adminController.deleteSingleGroundSound
 );
+
+router.get(
+  "/get-single-article/:id",
+  auth(UserRole.ADMIN),
+  adminController.getArticleById
+);
+
+router.get(
+  "/get-single-goal/:id",
+  auth(UserRole.ADMIN),
+  adminController.getGoalById
+);
+router.get(
+  "/get-single-sound/:id",
+  auth(UserRole.ADMIN),
+  adminController.getSingleGroundSoundById
+);
+router.get("/get-all-goal", auth(UserRole.ADMIN), adminController.getAllGoal);
+router.get("/get-all-user", auth(UserRole.ADMIN), adminController.getAllUser);
+router.get(
+  "/get-all-ground",
+  auth(UserRole.ADMIN),
+  adminController.getAllGroundingSound
+);
 router.post(
   "/create-goal",
   auth(UserRole.ADMIN),
@@ -74,4 +98,22 @@ router.post(
   validateRequest(adminValidation.createGoal),
   adminController.createGoal
 );
+router.patch(
+  "/update-single-goal/:id",
+  auth(UserRole.ADMIN),
+  fileUploader.goalImage,
+  parseBodyData,
+  adminController.updateSingGoal
+);
+router.delete(
+  "/delete-single-goal/:id",
+  auth(UserRole.ADMIN),
+  adminController.deleteSingleGoal
+);
+router.get(
+  "/get-sinlge-goal/:id",
+  auth(UserRole.ADMIN),
+  adminController.getGoalById
+);
+
 export const adminRoute = router;

@@ -4,7 +4,9 @@ import ApiError from "../../../errors/ApiErrors";
 import { jwtHelpers } from "../../../helpers/jwtHelpers";
 import config from "../../../config";
 import searchAndPaginate from "../../../helpers/searchAndPaginate";
-import { Article, User } from "@prisma/client";
+import { Article, Goal, GroundSound, User } from "@prisma/client";
+import { ConnectionCheckOutStartedEvent } from "mongodb";
+import httpStatus from "http-status";
 
 const loginAdmin = async (payload: any) => {
   const user = await prisma.admin.findUnique({
@@ -61,6 +63,7 @@ const getAllUser = async (
         email: true,
 
         status: true,
+        Profile:true
       },
     }
   );
@@ -78,20 +81,47 @@ const createArticle = async (payload: any) => {
   return result;
 };
 
-const getAllArticle = async () => {
-  const result = await prisma.article.findMany({});
+const getAllArticle = async (page: number = 1, limit: number = 10) => {
+  let additionalFilter = {};
+  const result = await searchAndPaginate<Article>(
+    prisma.article,
+    [],
+    page,
+    limit,
+    "",
+    additionalFilter,
+    {
+      select: {
+        id: true,
+        articleImage: true,
+        content: true,
+        time: true,
+        title: true,
+        emotionalReason: true,
+        cause: true,
+        goal: true,
+        mood: true,
+      },
+    }
+  );
   return result;
 };
 
 const updateSingleArticle = async (id: string, data: any) => {
-  console.log(data, "check data");
-
   const result = await prisma.article.update({
     where: {
       id: id,
     },
     data: {
       ...data,
+    },
+  });
+  return result;
+};
+const getArticleById = async (id: string) => {
+  const result = await prisma.article.findUniqueOrThrow({
+    where: {
+      id: id,
     },
   });
   return result;
@@ -110,17 +140,36 @@ const createGroundingSound = async (payload: any) => {
     data: {
       ...payload,
     },
-  });  
+  });
 
   return result;
 };
-const getAllGroundingSound = async () => {
-  const result = await prisma.groundSound.findMany({});
+const getAllGroundingSound = async (page: number = 1, limit: number = 10) => {
+  const result = await searchAndPaginate<GroundSound>(
+    prisma.groundSound,
+    [],
+    page,
+    limit,
+    "",
+    {},
+    {
+      select: {
+        id: true,
+        emotionalReason: true,
+        cause: true,
+        goal: true,
+        mood: true,
+       soundName:true,
+        soundImage: true,
+        soundAudioFile: true,
+        time: true,
+        authority: true,
+      },
+    }
+  );
   return result;
 };
 const updateSingleGroundSound = async (id: string, data: any) => {
-
-
   const result = await prisma.groundSound.update({
     where: {
       id: id,
@@ -140,23 +189,50 @@ const deleteSingleGroundSound = async (id: string) => {
   });
   return result;
 };
-
+const getSingleGroundSoundById = async (id: string) => {
+  const result = await prisma.groundSound.findUnique({
+    where: {
+      id: id,
+    },
+  });
+  return result;
+};
 const createGoal = async (payload: any) => {
-  console.log(payload,"check payload from service file")
+  console.log(payload, "check payload from service file");
   const result = await prisma.goalModel.create({
     data: {
       ...payload,
     },
-  });  
+  });
 
   return result;
 };
-const getAllGoal = async () => {
-  const result = await prisma.goalModel.findMany({});
+const getAllGoal = async (page: number = 1, limit: number = 10) => {
+   console.log(page,"check page")
+   console.log(limit,"check limit")
+  const result = await searchAndPaginate<Goal>(
+    prisma.goalModel,
+    [],
+    page,
+    limit,
+    "",
+    {},
+    {
+      select: {
+        id: true,
+        title: true,
+        subtitle: true,
+        emotionalReason: true,
+        cause: true,
+        goal: true,
+        mood: true,
+        goalImage: true,
+      },
+    }
+  );
   return result;
 };
 const updateSingGoal = async (id: string, data: any) => {
-
 
   const result = await prisma.goalModel.update({
     where: {
@@ -178,6 +254,15 @@ const deleteSingleGoal = async (id: string) => {
   return result;
 };
 
+const geGoalById = async (id: string) => {
+  const result = await prisma.goalModel.findUniqueOrThrow({
+    where: {
+      id: id,
+    },
+  });
+
+  return result;
+};
 
 export const adminService = {
   loginAdmin,
@@ -189,9 +274,12 @@ export const adminService = {
   createGroundingSound,
   updateSingleGroundSound,
   deleteSingleGroundSound,
-getAllGroundingSound,
-deleteSingleGoal,
-createGoal,
- updateSingGoal,
- getAllGoal
+  getAllGroundingSound,
+  deleteSingleGoal,
+  createGoal,
+  updateSingGoal,
+  getAllGoal,
+  geGoalById,
+  getArticleById,
+  getSingleGroundSoundById,
 };

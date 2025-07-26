@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import catchAsync from "../../../shared/catchAsync";
 
 import sendResponse from "../../../shared/sendResponse";
@@ -8,6 +8,7 @@ import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import uploadToDigitalOcean from "../../../helpers/uploadToDigitalOcean";
 import { deleteFromDigitalOcean } from "../../../helpers/deleteFromDigitalOccean";
+import { ConnectionCheckOutStartedEvent } from "mongodb";
 
 const loginAdmin = catchAsync(async (req: Request, res: Response) => {
   const result = await adminService.loginAdmin(req.body);
@@ -16,6 +17,20 @@ const loginAdmin = catchAsync(async (req: Request, res: Response) => {
     statusCode: 201,
     success: true,
     message: "admin successfully logged in",
+    data: result,
+  });
+});
+const getAllUser = catchAsync(async (req: Request, res: Response) => {
+  const { page, limit } = req.query;
+  const result = await adminService.getAllUser(
+    Number(page) || 1,
+    Number(limit) || 10
+  );
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "all user get successfully",
     data: result,
   });
 });
@@ -44,10 +59,15 @@ const createArticle = catchAsync(async (req: Request, res: Response) => {
         console.error("Failed to delete uploaded file:", deleteErr);
       }
     }
+     throw error
   }
 });
 const getAllArticle = catchAsync(async (req: Request, res: Response) => {
-  const result = await adminService.getAllArticle();
+  const { page, limit } = req.query;
+  const result = await adminService.getAllArticle(
+    Number(page) || 1,
+    Number(limit) || 10
+  );
 
   sendResponse(res, {
     statusCode: 200,
@@ -84,6 +104,7 @@ const updateSingleArticle = catchAsync(async (req: Request, res: Response) => {
         console.error("Failed to delete uploaded file:", deleteErr);
       }
     }
+     throw error
   }
 });
 
@@ -142,7 +163,11 @@ const createGroundingSound = catchAsync(async (req: Request, res: Response) => {
   }
 });
 const getAllGroundingSound = catchAsync(async (req: Request, res: Response) => {
-  const result = await adminService.getAllGroundingSound();
+  const { page, limit } = req.query;
+  const result = await adminService.getAllGroundingSound(
+    Number(page) || 1,
+    Number(limit) || 10
+  );
 
   sendResponse(res, {
     statusCode: 200,
@@ -170,7 +195,10 @@ const updateSingleGroundSound = catchAsync(
         }
       }
 
-      const result = await adminService.updateSingleGroundSound(req.params.id,req.body);
+      const result = await adminService.updateSingleGroundSound(
+        req.params.id,
+        req.body
+      );
 
       sendResponse(res, {
         statusCode: 201,
@@ -216,7 +244,7 @@ const createGoal = catchAsync(async (req: Request, res: Response) => {
       throw new ApiError(httpStatus.NOT_FOUND, "goal image is required");
     }
     uploadedFileUrl = await uploadToDigitalOcean(file);
-    console.log(uploadedFileUrl,"check url")
+    console.log(uploadedFileUrl, "check url");
     req.body.goalImage = uploadedFileUrl;
     const result = await adminService.createGoal(req.body);
 
@@ -234,11 +262,16 @@ const createGoal = catchAsync(async (req: Request, res: Response) => {
         console.error("Failed to delete uploaded file:", deleteErr);
       }
     }
+     throw error
   }
 });
 
 const getAllGoal = catchAsync(async (req: Request, res: Response) => {
-  const result = await adminService.getAllGoal();
+  const { page, limit } = req.query;
+  const result = await adminService.getAllGoal(
+    Number(page) || 1,
+    Number(limit) || 10
+  );
 
   sendResponse(res, {
     statusCode: 200,
@@ -247,36 +280,37 @@ const getAllGoal = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-const updateSingGoal = catchAsync(async (req: Request, res: Response) => {
-  let uploadedFileUrl: string | null = null;
-  try {
-    const file = req.file;
-   
-    if (file) {
-      console.log("file logic");
-      uploadedFileUrl = await uploadToDigitalOcean(file);
-      req.body.articleImage = uploadedFileUrl;
-    }
-    const result = await adminService.updateSingGoal(
-      req.params.id,
-      req.body
-    );
-    sendResponse(res, {
-      statusCode: 201,
-      success: true,
-      message: "goal  updated  successfully",
-      data: result,
-    });
-  } catch (error) {
-    if (uploadedFileUrl) {
-      try {
-        await deleteFromDigitalOcean(uploadedFileUrl);
-      } catch (deleteErr) {
-        console.error("Failed to delete uploaded file:", deleteErr);
+const updateSingGoal = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    let uploadedFileUrl: string | null = null;
+    try {
+      const file = req.file;
+
+      if (file) {
+        uploadedFileUrl = await uploadToDigitalOcean(file);
+        req.body.goalImage = uploadedFileUrl;
+        console.log(req.body.goalImage, "check image");
       }
+      const result = await adminService.updateSingGoal(req.params.id, req.body);
+      sendResponse(res, {
+        statusCode: 201,
+        success: true,
+        message: "goal  updated  successfully",
+        data: result,
+      });
+    } catch (error) {
+      if (uploadedFileUrl) {
+        try {
+          await deleteFromDigitalOcean(uploadedFileUrl);
+        } catch (deleteErr) {
+          console.error("Failed to delete uploaded file:", deleteErr);
+        }
+     
+      } 
+      throw error
     }
   }
-});
+);
 
 const deleteSingleGoal = catchAsync(async (req: Request, res: Response) => {
   const result = await adminService.deleteSingleGoal(req.params.id);
@@ -288,6 +322,40 @@ const deleteSingleGoal = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+const getArticleById = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.getArticleById(req.params.id);
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: " article get   Successfully",
+    data: result,
+  });
+});
+const getGoalById = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.geGoalById(req.params.id);
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: " goal get   Successfully",
+    data: result,
+  });
+});
+const getSingleGroundSoundById = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await adminService.getSingleGroundSoundById(req.params.id);
+
+    sendResponse(res, {
+      statusCode: 201,
+      success: true,
+      message: " ground get   Successfully",
+      data: result,
+    });
+  }
+);
+
 export const adminController = {
   loginAdmin,
   createArticle,
@@ -301,5 +369,9 @@ export const adminController = {
   getAllGoal,
   updateSingGoal,
   deleteSingleGoal,
-  createGoal
+  createGoal,
+  getArticleById,
+  getGoalById,
+  getSingleGroundSoundById,
+  getAllUser,
 };

@@ -1,25 +1,46 @@
 import multer from "multer";
 
+// Use in-memory storage
 const storage = multer.memoryStorage();
 
-const upload = multer({ storage: storage });
+// Supported MIME types for images
+const allowedImageTypes = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+];
 
-// Upload single images
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200MB
+  fileFilter: (req, file, cb) => {
+    const mimetype = file.mimetype;
+
+    console.log(file,"check file")
+    cb(null, true);
+    // Allow specific image types, and all audio/video types
+ 
+  },
+});
+
+// Upload handlers
 const selfie = upload.single("selfie");
 const profileImage = upload.single("profileImage");
 const chatImage = upload.single("chatImage");
-
-const articleImage=upload.single("articleImage")
-const goalImage=upload.single("goalImage")
+const articleImage = upload.single("articleImage");
+const goalImage = upload.single("goalImage");
 
 const uploadGroundSound = upload.fields([
   { name: "soundAudioFile", maxCount: 1 },
   { name: "soundImage", maxCount: 1 },
-
-
 ]);
 
 const providerDocument = upload.single("document");
+
+// Export all configured upload handlers
 export const fileUploader = {
   selfie,
   profileImage,
@@ -27,5 +48,5 @@ export const fileUploader = {
   uploadGroundSound,
   providerDocument,
   articleImage,
-  goalImage
+  goalImage,
 };

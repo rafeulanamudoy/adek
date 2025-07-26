@@ -47,9 +47,10 @@ model Profile {
 
   branch          Branch
   serviceYear     ServiceYear
+  desc   String
   goal            Goal[]          @default([])
-  cause           Cause
-  emotionalReason EmotionalReason
+  cause           Cause[]
+  emotionalReason EmotionalReason[]
   mood            Mood[]          @default([])
 
   userId    String   @unique @db.ObjectId

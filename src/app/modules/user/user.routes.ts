@@ -22,18 +22,15 @@ router.post(
   userController.createUser
 );
 router.patch(
-  "/update-provider-profile",
+  "/update-profile",
   auth(),
-  fileUploader.providerDocument,
+
+  fileUploader.profileImage,
   parseBodyData,
-  // validateRequest(userValidation.updateProviderProfile),
-  userController.updateProviderProfile
+
+  userController.updateProfile
 );
 
-router.get(
-  "/get-profile",
-  auth(),
-  userController.getUserProfile
-);
+router.get("/get-profile", auth(), userController.getUserProfile);
 
 export const userRoute = router;

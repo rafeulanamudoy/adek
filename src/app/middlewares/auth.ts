@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
 import config from "../../config";
-import { Secret } from "jsonwebtoken";
+
+import jwt, { JwtPayload, Secret } from 'jsonwebtoken';
 
 import httpStatus from "http-status";
 import { jwtHelpers } from "../../helpers/jwtHelpers";
@@ -39,12 +40,19 @@ const auth = (...roles: string[]) => {
         }
         throw new ApiError(httpStatus.UNAUTHORIZED, "You are not authorized!");
       }
-
-      const verifiedUser = jwtHelpers.verifyToken(
+    
+      // const verifiedUser = jwtHelpers.verifyToken(
+      //   token,
+      //   config.jwt.jwt_secret as Secret
+      // );
+      console.log(token,"check token")
+       const verifiedUser = jwtHelpers.verifyToken(
         token,
         config.jwt.jwt_secret as Secret
       );
 
+
+  
       const existingUser = await prisma.user.findUnique({
         where: { id: verifiedUser.id },
       });

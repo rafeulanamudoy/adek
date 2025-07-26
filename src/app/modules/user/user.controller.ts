@@ -8,6 +8,7 @@ import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
 import uploadToDigitalOcean from "../../../helpers/uploadToDigitalOcean";
 import { deleteFromDigitalOcean } from "../../../helpers/deleteFromDigitalOccean";
+import { ConnectionCheckOutStartedEvent } from "mongodb";
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.createUser(req.body);
@@ -19,39 +20,38 @@ const createUser = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-const updateProviderProfile = catchAsync(
-  async (req: Request, res: Response) => {
-    let uploadedFileUrl: string | null = null;
+const updateProfile = catchAsync(async (req: Request, res: Response) => {
+  let uploadedFileUrl: string | null = null;
 
-    try {
-      const file = req.file;
-      if (!file) {
-        throw new ApiError(httpStatus.NOT_FOUND, "File not found");
-      }
+  try {
+    const file = req.file;
 
+    if (file) {
       uploadedFileUrl = await uploadToDigitalOcean(file);
+   
+      req.body.profileImage = uploadedFileUrl;
+    }
 
-      req.body.document = uploadedFileUrl;
+    const result = await userService.updateProfile(req.body, req.user.id);
 
-      const result = await userService.updateProfile(req.body, req.user.id);
-
-      sendResponse(res, {
-        statusCode: 201,
-        success: true,
-        message: " profile updated successfully",
-        data: result,
-      });
-    } catch (error) {
-      if (uploadedFileUrl) {
-        try {
-          await deleteFromDigitalOcean(uploadedFileUrl);
-        } catch (deleteErr) {
-          console.error("Failed to delete uploaded file:", deleteErr);
-        }
+    sendResponse(res, {
+      statusCode: 201,
+      success: true,
+      message: " profile updated successfully",
+      data: result,
+    });
+  } catch (error) {
+   
+    if (uploadedFileUrl) {
+      try {
+        await deleteFromDigitalOcean(uploadedFileUrl);
+      } catch (deleteErr) {
+        console.error("Failed to delete uploaded file:", deleteErr);
       }
     }
+    throw error
   }
-);
+});
 
 const getUserProfile = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.getUserProfile(req.user.id);
@@ -69,6 +69,6 @@ const getUserProfile = catchAsync(async (req: Request, res: Response) => {
 
 export const userController = {
   createUser,
-  updateProviderProfile,
+  updateProfile,
   getUserProfile,
 };

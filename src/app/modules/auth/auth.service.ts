@@ -111,7 +111,7 @@ const verifyOtp = async (
   });
 
   if (existingOtp?.otpCode !== otp) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, "Wrong OTP");
+    throw new ApiError(httpStatus.NOT_FOUND, "Wrong OTP");
   }
 
   if (existingOtp.expiresAt && new Date() > existingOtp.expiresAt) {
@@ -158,7 +158,8 @@ const verifyOtp = async (
       return {
         token: jwtHelpers.generateToken(
           { id: userId },
-          config.otpSecret.signup_otp_secret as Secret
+
+          config.jwt.jwt_secret as Secret
         ),
         isProfile: existingOtp.user.isProfile,
       };

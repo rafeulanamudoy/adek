@@ -2,6 +2,7 @@ import { S3Client, S3ClientConfig, ObjectCannedACL } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import path from "path";
 import ApiError from "../errors/ApiErrors";
+import { ConnectionCheckOutStartedEvent } from "mongodb";
 
 const DO_CONFIG = {
   endpoint: "https://nyc3.digitaloceanspaces.com",
@@ -22,24 +23,8 @@ const s3Config: S3ClientConfig = {
 
 const s3 = new S3Client(s3Config);
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
+const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB
 
-// Allowed MIME types
-const ALLOWED_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
-
-/**
- * Uploads a file buffer to DigitalOcean Spaces and returns the file URL.
- * @param {Express.Multer.File} file - The file object from multer
- * @returns {Promise<string>} - The URL of the uploaded file
- * @throws {Error} - If file validation fails or upload fails
- */
 const uploadToDigitalOcean = async (
   file: Express.Multer.File
 ): Promise<string> => {
@@ -55,10 +40,10 @@ const uploadToDigitalOcean = async (
       );
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      throw new ApiError(400, "File type not allowed");
-    }
-    const fileExtension = path.extname(file.originalname);
+    // Use the file's mimetype or fallback to application/octet-stream
+    const mimeType = file.mimetype || "application/octet-stream";
+
+    const fileExtension = path.extname(file.originalname) || "";
     const fileName = `uploads/${Date.now()}-${Math.random()
       .toString(36)
       .substring(2, 15)}${fileExtension}`;
@@ -68,20 +53,23 @@ const uploadToDigitalOcean = async (
       Key: fileName,
       Body: file.buffer,
       ACL: "public-read" as ObjectCannedACL,
-      ContentType: file.mimetype,
+      ContentType: mimeType,
     };
+
     const upload = new Upload({
       client: s3,
       params: uploadParams,
     });
 
     const data = await upload.done();
+
     const fileUrl =
       data.Location ||
       `${DO_CONFIG.endpoint}/${DO_CONFIG.spaceName}/${fileName}`;
 
     return fileUrl;
   } catch (error) {
+     console.log(error,"check error")
     throw new ApiError(
       500,
       error instanceof Error
