@@ -113,7 +113,7 @@ const getUserJournal = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  const numericMonth = parseInt(month as string); // e.g., "7" -> 7
+  const numericMonth = parseInt(month as string); 
   const numericYear = parseInt(year as string);
 
   const start = new Date(Date.UTC(numericYear, numericMonth - 1, 1));
