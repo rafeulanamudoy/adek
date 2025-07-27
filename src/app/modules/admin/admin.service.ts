@@ -3,10 +3,10 @@ import bcrypt from "bcryptjs";
 import ApiError from "../../../errors/ApiErrors";
 import { jwtHelpers } from "../../../helpers/jwtHelpers";
 import config from "../../../config";
-import searchAndPaginate from "../../../helpers/searchAndPaginate";
-import { Article, Goal, GroundSound, User } from "@prisma/client";
-import { ConnectionCheckOutStartedEvent } from "mongodb";
-import httpStatus from "http-status";
+
+import { Article, Goal, GroundSound, Prisma, User } from "@prisma/client";
+import { searchAndPaginate } from "../../../helpers/searchAndPaginate";
+
 
 const loginAdmin = async (payload: any) => {
   const user = await prisma.admin.findUnique({
@@ -44,12 +44,12 @@ const getAllUser = async (
   limit: number = 10,
   searchQuery: string = ""
 ) => {
-  const additionalFilter: any = {
+  const additionalFilter: Prisma.UserWhereInput = {
     NOT: {
       role: "ADMIN",
     },
   };
-  const user = await searchAndPaginate<User>(
+  const user = await searchAndPaginate<typeof prisma.user,Prisma.UserWhereInput,Prisma.UserSelect>(
     prisma.user,
     ["fullName", "email"],
     page,
@@ -63,7 +63,8 @@ const getAllUser = async (
         email: true,
 
         status: true,
-        Profile:true
+        Profile:true,
+         
       },
     }
   );
@@ -82,8 +83,8 @@ const createArticle = async (payload: any) => {
 };
 
 const getAllArticle = async (page: number = 1, limit: number = 10) => {
-  let additionalFilter = {};
-  const result = await searchAndPaginate<Article>(
+  let additionalFilter:Prisma.ArticleWhereInput = {};
+  const result = await searchAndPaginate<typeof prisma.article,Prisma.ArticleWhereInput,Prisma.ArticleSelect>(
     prisma.article,
     [],
     page,
@@ -145,7 +146,7 @@ const createGroundingSound = async (payload: any) => {
   return result;
 };
 const getAllGroundingSound = async (page: number = 1, limit: number = 10) => {
-  const result = await searchAndPaginate<GroundSound>(
+  const result = await searchAndPaginate<typeof prisma.groundSound,Prisma.GroundSoundWhereInput,Prisma.GroundSoundSelect>(
     prisma.groundSound,
     [],
     page,
@@ -164,6 +165,7 @@ const getAllGroundingSound = async (page: number = 1, limit: number = 10) => {
         soundAudioFile: true,
         time: true,
         authority: true,
+
       },
     }
   );
@@ -208,9 +210,8 @@ const createGoal = async (payload: any) => {
   return result;
 };
 const getAllGoal = async (page: number = 1, limit: number = 10) => {
-   console.log(page,"check page")
-   console.log(limit,"check limit")
-  const result = await searchAndPaginate<Goal>(
+
+  const result = await searchAndPaginate<typeof prisma.goalModel,Prisma.GoalModelWhereInput,Prisma.GoalModelSelect>(
     prisma.goalModel,
     [],
     page,

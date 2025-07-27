@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Mood, Goal, Cause, EmotionalReason } from "@prisma/client"; 
+import { Mood, Goal, Cause, EmotionalReason } from "@prisma/client";
 
 const createArticle = z.object({
   mood: z
@@ -28,16 +28,15 @@ const createArticle = z.object({
 
   title: z.string().min(1, "Title is required"),
   time: z.string().min(1, "Time is required"),
-  content: z.any(), 
- 
+  content: z.any(),
 });
 
-
-
- const createGroundingSound = z.object({
-  mood: z.nativeEnum(Mood, {
-    required_error: "mood is required",
-  }),
+const createGroundingSound = z.object({
+  mood: z
+    .array(z.nativeEnum(Mood), {
+      required_error: "Mood is required",
+    })
+    .min(1, "Select at least one mood"),
 
   goal: z
     .array(z.nativeEnum(Goal), {
@@ -60,12 +59,13 @@ const createArticle = z.object({
   soundName: z.string().min(1, "Sound name is required"),
   authority: z.string().min(1, "Authority is required"),
   time: z.string().min(1, "Time is required"),
- 
 });
 export const createGoal = z.object({
-  mood: z.nativeEnum(Mood, {
-    required_error: "Mood is required",
-  }),
+  mood: z
+    .array(z.nativeEnum(Mood), {
+      required_error: "Mood is required",
+    })
+    .min(1, "Select at least one mood"),
 
   goal: z
     .array(z.nativeEnum(Goal), {
@@ -87,13 +87,10 @@ export const createGoal = z.object({
 
   title: z.string().min(1, "Title is required"),
   subtitle: z.string().min(1, "Subtitle is required"),
-  
 });
-
 
 export const adminValidation = {
   createArticle,
   createGroundingSound,
   createGoal,
-  
 };

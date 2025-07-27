@@ -17,6 +17,10 @@ router.post(
   validateRequest(authValidation.authLoginSchema),
   adminController.loginAdmin
 );
+
+//user route
+router.get("/get-all-user", auth(UserRole.ADMIN), adminController.getAllUser);
+//article route
 router.post(
   "/create-article",
   auth(UserRole.ADMIN),
@@ -31,6 +35,7 @@ router.get(
   auth(UserRole.ADMIN),
   adminController.getAllArticle
 );
+router.get("/get-single-article/:id", auth(), adminController.getArticleById);
 router.patch(
   "/update-single-article/:id",
 
@@ -41,8 +46,11 @@ router.patch(
 );
 router.delete(
   "/delete-single-article/:id",
+  auth(UserRole.ADMIN),
   adminController.deleteSingleArticle
 );
+
+//ground sound route
 router.post(
   "/create-ground-sound",
   auth(UserRole.ADMIN),
@@ -59,6 +67,16 @@ router.patch(
   parseBodyData,
   adminController.updateSingleGroundSound
 );
+router.get(
+  "/get-all-ground",
+  auth(UserRole.ADMIN),
+  adminController.getAllGroundingSound
+);
+router.get(
+  "/get-single-sound/:id",
+  auth(),
+  adminController.getSingleGroundSoundById
+);
 
 router.delete(
   "/delete-single-ground/:id",
@@ -66,29 +84,8 @@ router.delete(
   adminController.deleteSingleGroundSound
 );
 
-router.get(
-  "/get-single-article/:id",
-  auth(UserRole.ADMIN),
-  adminController.getArticleById
-);
+//goal route
 
-router.get(
-  "/get-single-goal/:id",
-  auth(UserRole.ADMIN),
-  adminController.getGoalById
-);
-router.get(
-  "/get-single-sound/:id",
-  auth(UserRole.ADMIN),
-  adminController.getSingleGroundSoundById
-);
-router.get("/get-all-goal", auth(UserRole.ADMIN), adminController.getAllGoal);
-router.get("/get-all-user", auth(UserRole.ADMIN), adminController.getAllUser);
-router.get(
-  "/get-all-ground",
-  auth(UserRole.ADMIN),
-  adminController.getAllGroundingSound
-);
 router.post(
   "/create-goal",
   auth(UserRole.ADMIN),
@@ -98,6 +95,9 @@ router.post(
   validateRequest(adminValidation.createGoal),
   adminController.createGoal
 );
+router.get("/get-all-goal", auth(UserRole.ADMIN), adminController.getAllGoal);
+router.get("/get-single-goal/:id", auth(), adminController.getGoalById);
+
 router.patch(
   "/update-single-goal/:id",
   auth(UserRole.ADMIN),
@@ -109,11 +109,6 @@ router.delete(
   "/delete-single-goal/:id",
   auth(UserRole.ADMIN),
   adminController.deleteSingleGoal
-);
-router.get(
-  "/get-sinlge-goal/:id",
-  auth(UserRole.ADMIN),
-  adminController.getGoalById
 );
 
 export const adminRoute = router;

@@ -35,11 +35,26 @@ model User {
   status UserStatus @default(PENDING)
   Otp    Otp[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   Profile   Profile?
+  Journal   Journal[]
 
   @@map("users")
+}
+
+model Journal {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content   String
+  entryDate DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("journals")
 }
 
 model Profile {
@@ -47,11 +62,11 @@ model Profile {
 
   branch          Branch
   serviceYear     ServiceYear
-  desc   String
-  goal            Goal[]          @default([])
+  desc            String
+  goal            Goal[]            @default([])
   cause           Cause[]
   emotionalReason EmotionalReason[]
-  mood            Mood[]          @default([])
+  mood            Mood[]            @default([])
 
   userId    String   @unique @db.ObjectId
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -81,7 +96,7 @@ model Article {
 model GroundSound {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  mood            Mood
+  mood            Mood[]
   goal            Goal[]
   cause           Cause[]
   emotionalReason EmotionalReason[]
@@ -98,20 +113,17 @@ model GroundSound {
 }
 
 model GoalModel {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  mood            Mood
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  mood            Mood[]
   goal            Goal[]
   cause           Cause[]
   emotionalReason EmotionalReason[]
 
-  title String
-  subtitle String
+  title     String
+  subtitle  String
   goalImage String
-  
-  
-  
-  createdAt DateTime @default(now())
 
+  createdAt DateTime @default(now())
 
   updatedAt DateTime @updatedAt
 

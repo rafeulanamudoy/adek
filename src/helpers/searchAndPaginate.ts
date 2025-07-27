@@ -1,18 +1,27 @@
-import { Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
-const searchAndPaginate = async <T>(
-  model: any,
-  searchableFields: (keyof T)[],
+export  const searchAndPaginate = async <
+  ModelDelegate extends {
+    findMany: Function;
+    count: Function;
+  },
+  WhereInput extends Record<string, any>,
+  Select extends object | null = null,
+  Include extends object | null = null
+>(
+  model: ModelDelegate,
+  searchableFields: (keyof WhereInput)[] = [],
   page: number = 1,
   limit: number = 10,
   searchQuery: string = "",
-  additionalFilter: Record<string, any> = {},
-  selectFields?: {
-    select?: Record<string, any>;
-    include?: Record<string, any>;
+  additionalFilter?: WhereInput,
+  options?: {
+    select?: Select;
+    include?: Include;
   },
-  orderField: string = "createdAt",
-  orderPositiion: string = "desc"
+  orderField?: keyof WhereInput,
+  orderPosition: "asc" | "desc" = "desc"
 ) => {
   const skip = (page - 1) * limit;
 
@@ -20,33 +29,28 @@ const searchAndPaginate = async <T>(
 
   if (searchQuery && searchableFields.length > 0) {
     searchFilter.OR = searchableFields.map((field) => ({
-      [field]: {
+      [field as string]: {
         contains: searchQuery,
-        mode: Prisma.QueryMode.insensitive,
+        mode: "insensitive",
       },
     }));
   }
 
-  searchFilter = {
+  const finalWhere = {
     ...searchFilter,
-    ...(Array.isArray(additionalFilter)
-      ? Object.assign({}, ...additionalFilter)
-      : additionalFilter),
+    ...(additionalFilter ?? {}),
   };
 
-  const queryOptions: Record<string, any> = {
-    where: searchFilter,
+  const queryOptions: any = {
+    where: finalWhere,
     skip,
     take: limit,
-    orderBy: { [orderField]: orderPositiion },
+    orderBy: orderField ? { [orderField as string]: orderPosition } : undefined,
+    ...options,
   };
 
-  if (selectFields?.select) queryOptions.select = selectFields.select;
-  if (selectFields?.include) queryOptions.include = selectFields.include;
-
-  const data = await model.findMany(queryOptions);
-
-  const total = await model.count({ where: searchFilter });
+  const data = await (model as any).findMany(queryOptions);
+  const total = await (model as any).count({ where: finalWhere });
 
   return {
     meta: {
@@ -58,5 +62,3 @@ const searchAndPaginate = async <T>(
     data,
   };
 };
-
-export default searchAndPaginate;

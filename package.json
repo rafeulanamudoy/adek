@@ -50,7 +50,7 @@
     "ioredis": "^5.6.0",
     "jsonwebtoken": "^9.0.2",
     "kkiapay-nodejs-sdk": "github:kkiapay/nodejs-sdk",
-    "mongodb": "^6.8.0",
+    "mongodb": "^6.18.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
