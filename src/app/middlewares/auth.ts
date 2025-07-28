@@ -45,7 +45,7 @@ const auth = (...roles: string[]) => {
       //   token,
       //   config.jwt.jwt_secret as Secret
       // );
-      console.log(token,"check token")
+      
        const verifiedUser = jwtHelpers.verifyToken(
         token,
         config.jwt.jwt_secret as Secret

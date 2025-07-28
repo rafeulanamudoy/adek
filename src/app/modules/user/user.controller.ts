@@ -21,15 +21,21 @@ const createUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const updateProfile = catchAsync(async (req: Request, res: Response) => {
-  let uploadedFileUrl: string | null = null;
+  const fileFields = ["coverPhoto", "profileImage"];
+  const uploadedUrls: { [key: string]: string } = {};
+  const files = req.files as {
+    [fieldname: string]: Express.Multer.File[];
+  };
 
   try {
-    const file = req.file;
-
-    if (file) {
-      uploadedFileUrl = await uploadToDigitalOcean(file);
-
-      req.body.profileImage = uploadedFileUrl;
+    for (const field of fileFields) {
+      const file = files?.[field]?.[0];
+      if (file) {
+        
+        const uploadedUrl = await uploadToDigitalOcean(file);
+        uploadedUrls[field] = uploadedUrl;
+        req.body[field] = uploadedUrl;
+      }
     }
 
     const result = await userService.updateProfile(req.body, req.user.id);
@@ -41,13 +47,16 @@ const updateProfile = catchAsync(async (req: Request, res: Response) => {
       data: result,
     });
   } catch (error) {
-    if (uploadedFileUrl) {
-      try {
-        await deleteFromDigitalOcean(uploadedFileUrl);
-      } catch (deleteErr) {
-        console.error("Failed to delete uploaded file:", deleteErr);
-      }
-    }
+    await Promise.all(
+      Object.values(uploadedUrls).map((url) =>
+        deleteFromDigitalOcean(url).catch((err) =>
+          console.error(
+            ` Failed to delete file from DigitalOcean: ${url}`,
+            err
+          )
+        )
+      )
+    );
     throw error;
   }
 });
@@ -113,7 +122,7 @@ const getUserJournal = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  const numericMonth = parseInt(month as string); 
+  const numericMonth = parseInt(month as string);
   const numericYear = parseInt(year as string);
 
   const start = new Date(Date.UTC(numericYear, numericMonth - 1, 1));
@@ -135,5 +144,5 @@ export const userController = {
   getUserPreference,
   searchUser,
   addJournal,
-  getUserJournal
+  getUserJournal,
 };

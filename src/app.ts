@@ -6,8 +6,11 @@ import GlobalErrorHandler from "./app/middlewares/globalErrorHandler";
 import { PrismaClient } from "@prisma/client";
 import path from "path";
 import handleWebHook from "./helpers/stripe.webhook";
-import { ExpressAdapter } from "@bull-board/express";
 
+import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
+import { ExpressAdapter } from "@bull-board/express";
+import { createBullBoard } from "@bull-board/api";
+import { communityPostFileQueue, otpQueueEmail } from "./helpers/redis";
 // import {
 //   assignJobQueue,
 //   conversationListQueue,
@@ -68,15 +71,13 @@ app.use("/api/v1", router);
 
 const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath("/admin/queues");
-// createBullBoard({
-//   queues: [
-//     new BullMQAdapter(otpQueueEmail),
-//     new BullMQAdapter(otpQueuePhone),
-//     new BullMQAdapter(conversationListQueue),
-//     new BullMQAdapter(assignJobQueue)
-//   ],
-//   serverAdapter,
-// });
+createBullBoard({
+  queues: [
+    new BullMQAdapter(otpQueueEmail),
+    new BullMQAdapter(communityPostFileQueue),
+  ],
+  serverAdapter,
+});
 
 // Mount the dashboard
 app.use("/admin/queues", serverAdapter.getRouter());

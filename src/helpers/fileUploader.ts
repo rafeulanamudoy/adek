@@ -19,10 +19,9 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const mimetype = file.mimetype;
 
-    console.log(file,"check file")
+
     cb(null, true);
     // Allow specific image types, and all audio/video types
- 
   },
 });
 
@@ -38,7 +37,17 @@ const uploadGroundSound = upload.fields([
   { name: "soundImage", maxCount: 1 },
 ]);
 
+const userImage = upload.fields([
+  { name: "profileImage", maxCount: 1 },
+  { name: "coverPhoto", maxCount: 1 },
+]);
+
 const providerDocument = upload.single("document");
+
+const communityPostDoc=upload.fields([
+  { name: "imageUrl", maxCount: 1 },
+  { name: "videoUrl", maxCount: 1 },
+])
 
 // Export all configured upload handlers
 export const fileUploader = {
@@ -49,4 +58,6 @@ export const fileUploader = {
   providerDocument,
   articleImage,
   goalImage,
+  userImage,
+  communityPostDoc
 };

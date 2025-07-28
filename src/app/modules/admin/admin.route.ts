@@ -32,7 +32,7 @@ router.post(
 );
 router.get(
   "/get-all-article",
-  auth(UserRole.ADMIN),
+  auth(),
   adminController.getAllArticle
 );
 router.get("/get-single-article/:id", auth(), adminController.getArticleById);
@@ -69,7 +69,7 @@ router.patch(
 );
 router.get(
   "/get-all-ground",
-  auth(UserRole.ADMIN),
+  auth(),
   adminController.getAllGroundingSound
 );
 router.get(
@@ -95,7 +95,7 @@ router.post(
   validateRequest(adminValidation.createGoal),
   adminController.createGoal
 );
-router.get("/get-all-goal", auth(UserRole.ADMIN), adminController.getAllGoal);
+router.get("/get-all-goal", auth(), adminController.getAllGoal);
 router.get("/get-single-goal/:id", auth(), adminController.getGoalById);
 
 router.patch(
@@ -109,6 +109,11 @@ router.delete(
   "/delete-single-goal/:id",
   auth(UserRole.ADMIN),
   adminController.deleteSingleGoal
+);
+router.get(
+  "/get-dashoboard-data",
+  auth(UserRole.ADMIN),
+  adminController.getDashoboardData
 );
 
 export const adminRoute = router;

@@ -25,7 +25,7 @@ router.patch(
   "/update-profile",
   auth(),
 
-  fileUploader.profileImage,
+  fileUploader.userImage,
   parseBodyData,
 
   userController.updateProfile

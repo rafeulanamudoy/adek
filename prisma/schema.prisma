@@ -18,6 +18,7 @@ model User {
   password String
 
   profileImage String @default("")
+  coverPhoto  String @default( "")
 
   sentMessages     PrivateMessage[] @relation("SentMessages")
   receivedMessages PrivateMessage[] @relation("ReceivedMessages")

@@ -11,6 +11,7 @@ import { Secret } from "jsonwebtoken";
 
 import { sendOtpToGmail } from "../../../helpers/sendOtpToEmail";
 import { OtpReason } from "../../../enum/verifyEnum";
+import { constructFromSymbol } from "date-fns/constants";
 
 const loginUserIntoDB = async (payload: any) => {
   payload.email = payload.email.toLowerCase();
@@ -247,12 +248,52 @@ const resendOtp = async (email: string, reason: string) => {
     token,
   };
 };
+
+
+export const changePassword = async (userId: string, oldPassword: string, newPassword: string
+) => {
+  // if (newPassword !== confirmPassword) {
+  //   throw new Error("New password and confirmation do not match.");
+  // }
+
+
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+  });
+
+
+
+
+  const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+  if (!isMatch) {
+    throw new ApiError(httpStatus.CONFLICT,"Old password is incorrect.");
+  }
+
+  
+  const isSamePassword = await bcrypt.compare(newPassword, user.password);
+  if (isSamePassword) {
+    throw new Error("New password must be different from the old password.");
+  }
+
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashedPassword },
+  });
+
+  return { message: "Password changed successfully." };
+};
 export const authService = {
   loginUserIntoDB,
 
   forgetPasswordToGmail,
-  // forgetPasswordToPhone,
+  
   verifyOtp,
   resetPassword,
   resendOtp,
+  changePassword
 };

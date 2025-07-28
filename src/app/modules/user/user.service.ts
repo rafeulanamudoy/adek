@@ -63,6 +63,7 @@ const updateProfile = async (payload: any, userId: string) => {
     data: {
       isProfile: true,
       profileImage: payload.profileImage,
+      coverPhoto: payload.coverPhoto,
       Profile: {
         upsert: {
           create: {
@@ -102,6 +103,7 @@ const getUserProfile = async (userId: string) => {
       fullName: true,
       Profile: true,
       profileImage: true,
+      coverPhoto: true,
     },
   });
 
@@ -122,10 +124,13 @@ const getUserPreference = async (
     goalLimit?: number;
     soundLimit?: number;
     mood?: string;
+    userPage?: number;
+    userLimit?: number;
 
     includeArticle?: boolean;
     includeGoal?: boolean;
     includeGroundSound?: boolean;
+    includeUser?: boolean;
   }
 ) => {
   const user = await prisma.user.findUniqueOrThrow({
@@ -137,21 +142,29 @@ const getUserPreference = async (
     articlePage = 1,
     goalPage = 1,
     soundPage = 1,
-    articleLimit = 2,
-    goalLimit = 3,
-    soundLimit = 3,
+    articleLimit = 5,
+    goalLimit = 5,
+    soundLimit = 5,
+    userPage = 1,
+    userLimit = 5,
     mood,
     includeArticle = true,
     includeGoal = true,
     includeGroundSound = true,
+    includeUser = true,
   } = {
     ...queryParams,
-    articleLimit: Number(queryParams.articleLimit ?? 2),
-    goalLimit: Number(queryParams.goalLimit ?? 3),
-    soundLimit: Number(queryParams.soundLimit ?? 3),
+    articleLimit: Number(queryParams.articleLimit ?? 5),
+    goalLimit: Number(queryParams.goalLimit ?? 5),
+    soundLimit: Number(queryParams.soundLimit ?? 5),
     articlePage: Number(queryParams.articlePage ?? 1),
     goalPage: Number(queryParams.goalPage ?? 1),
-    soundPage: Number(queryParams.soundPage ?? 1),
+    soundPage: Number(queryParams.userPage ?? 1),
+    userPage: Number(queryParams.soundPage ?? 1),
+    userLimit: Number(queryParams.userLimit ?? 5),
+    includeUser: JSON.parse(
+      (queryParams.includeUser as unknown as string) ?? true
+    ),
     includeArticle: JSON.parse(
       (queryParams.includeArticle as unknown as string) ?? true
     ),
@@ -169,6 +182,21 @@ const getUserPreference = async (
     },
   };
 
+  const userFilter: any = {
+    Profile: {
+      AND: [
+        mood
+          ? { mood: { has: mood } }
+          : user.Profile?.mood
+          ? { mood: { has: user.Profile.mood[0] } }
+          : undefined,
+        user.Profile?.branch ? { branch: user.Profile.branch } : undefined,
+      ].filter(Boolean),
+    },
+    id: {
+      not: userId,
+    },
+  };
   const promises: Promise<any>[] = [];
   const keys: string[] = [];
 
@@ -194,7 +222,22 @@ const getUserPreference = async (
     );
     keys.push("article");
   }
-
+  if (includeUser) {
+    promises.push(
+      searchAndPaginate<
+        typeof prisma.user,
+        Prisma.UserWhereInput,
+        Prisma.UserSelect
+      >(prisma.user, [], userPage, userLimit, "", userFilter, {
+        select: {
+          id: true,
+          profileImage: true,
+          fullName: true,
+        },
+      })
+    );
+    keys.push("users");
+  }
   if (includeGoal) {
     promises.push(
       searchAndPaginate<
@@ -231,7 +274,7 @@ const getUserPreference = async (
           goal: true,
           mood: true,
           soundImage: true,
-
+          soundName: true,
           soundAudioFile: true,
           time: true,
           authority: true,
@@ -345,6 +388,10 @@ const getUserPreference = async (
 //   };
 // };
 
+
+
+
+
 const searchUser = async (
   page: number = 1,
   limit: number = 10,
@@ -363,7 +410,7 @@ const searchUser = async (
 
   const additionalFilter: Prisma.UserWhereInput = {
     NOT: {
-      role: "ADMIN", 
+      role: "ADMIN",
     },
     Profile: Object.keys(profileFilter).length ? profileFilter : undefined,
   };
@@ -374,7 +421,7 @@ const searchUser = async (
     Prisma.UserSelect
   >(
     prisma.user,
-    ["fullName", "email"], 
+    ["fullName", "email"],
     page || 1,
     limit || 10,
     searchQuery,
@@ -393,7 +440,11 @@ const searchUser = async (
   return users;
 };
 
-const addJournal = async (payload: { userId: string; content: string; entryDate: Date }) => {
+const addJournal = async (payload: {
+  userId: string;
+  content: string;
+  entryDate: Date;
+}) => {
   const result = await prisma.journal.create({
     data: {
       userId: payload.userId,
@@ -404,10 +455,7 @@ const addJournal = async (payload: { userId: string; content: string; entryDate:
   return result;
 };
 
-
-
-
- const getUserJournal = async (userId: string, start: Date, end: Date) => {
+const getUserJournal = async (userId: string, start: Date, end: Date) => {
   const journalCollection = await getMongoCollection("journals");
 
   const pipeline = [
@@ -450,5 +498,5 @@ export const userService = {
   getUserPreference,
   searchUser,
   addJournal,
-  getUserJournal
+  getUserJournal,
 };

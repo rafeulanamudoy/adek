@@ -5,6 +5,7 @@ import { authValidation } from "./auth.validation";
 
 
 import verifyOtpToken from "../../middlewares/verifyOtpToken";
+import auth from "../../middlewares/auth";
 
 
 const router = express.Router();
@@ -31,5 +32,6 @@ router.patch(
 );
 
 router.post("/resend-otp",validateRequest(authValidation.resendOtpSchema),authController.resendOtp)
+router.post("/change-password",auth(),authController.changePassword)
 
 export const authRoute = router;

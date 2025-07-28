@@ -59,14 +59,15 @@ const createArticle = catchAsync(async (req: Request, res: Response) => {
         console.error("Failed to delete uploaded file:", deleteErr);
       }
     }
-     throw error
+    throw error;
   }
 });
 const getAllArticle = catchAsync(async (req: Request, res: Response) => {
-  const { page, limit } = req.query;
+  const { page, limit, mood } = req.query;
   const result = await adminService.getAllArticle(
     Number(page) || 1,
-    Number(limit) || 10
+    Number(limit) || 10,
+    mood as string
   );
 
   sendResponse(res, {
@@ -104,7 +105,7 @@ const updateSingleArticle = catchAsync(async (req: Request, res: Response) => {
         console.error("Failed to delete uploaded file:", deleteErr);
       }
     }
-     throw error
+    throw error;
   }
 });
 
@@ -163,10 +164,11 @@ const createGroundingSound = catchAsync(async (req: Request, res: Response) => {
   }
 });
 const getAllGroundingSound = catchAsync(async (req: Request, res: Response) => {
-  const { page, limit } = req.query;
+  const { page, limit, mood } = req.query;
   const result = await adminService.getAllGroundingSound(
     Number(page) || 1,
-    Number(limit) || 10
+    Number(limit) || 10,
+    mood as string
   );
 
   sendResponse(res, {
@@ -262,15 +264,17 @@ const createGoal = catchAsync(async (req: Request, res: Response) => {
         console.error("Failed to delete uploaded file:", deleteErr);
       }
     }
-     throw error
+    throw error;
   }
 });
 
 const getAllGoal = catchAsync(async (req: Request, res: Response) => {
-  const { page, limit } = req.query;
+  const { page, limit ,mood} = req.query;
   const result = await adminService.getAllGoal(
     Number(page) || 1,
-    Number(limit) || 10
+    Number(limit) || 10,
+    mood as string
+
   );
 
   sendResponse(res, {
@@ -305,9 +309,8 @@ const updateSingGoal = catchAsync(
         } catch (deleteErr) {
           console.error("Failed to delete uploaded file:", deleteErr);
         }
-     
-      } 
-      throw error
+      }
+      throw error;
     }
   }
 );
@@ -355,6 +358,16 @@ const getSingleGroundSoundById = catchAsync(
     });
   }
 );
+const getDashoboardData = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.getDashoboardData(req.query.type as string);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: " dashboiard data get  Successfully",
+    data: result,
+  });
+});
 
 export const adminController = {
   loginAdmin,
@@ -374,4 +387,5 @@ export const adminController = {
   getGoalById,
   getSingleGroundSoundById,
   getAllUser,
+  getDashoboardData,
 };

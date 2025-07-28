@@ -3,8 +3,6 @@ import catchAsync from "../../../shared/catchAsync";
 import { authService } from "./auth.service";
 import sendResponse from "../../../shared/sendResponse";
 
-
-
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.loginUserIntoDB(req.body);
 
@@ -15,9 +13,6 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-
-
-
 
 const forgetPasswordToGmail = catchAsync(
   async (req: Request, res: Response) => {
@@ -32,12 +27,11 @@ const forgetPasswordToGmail = catchAsync(
     });
   }
 );
- 
 
 const verifyOtp = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id as string;
-  const { otp, fcmToken ,reason} = req.body;
-  const response = await authService.verifyOtp(otp, userId, fcmToken,reason);
+  const { otp, fcmToken, reason } = req.body;
+  const response = await authService.verifyOtp(otp, userId, fcmToken, reason);
 
   sendResponse(res, {
     statusCode: 201,
@@ -59,10 +53,8 @@ const resetPassword = catchAsync(async (req: any, res: Response) => {
   });
 });
 
-
-const resendOtp=catchAsync(async (req: any, res: Response) => {
-  
-  const { email,reason } = req.body;
+const resendOtp = catchAsync(async (req: any, res: Response) => {
+  const { email, reason } = req.body;
   const result = await authService.resendOtp(email, reason);
 
   sendResponse(res, {
@@ -72,11 +64,29 @@ const resendOtp=catchAsync(async (req: any, res: Response) => {
     data: result,
   });
 });
+
+const changePassword = catchAsync(async (req: any, res: Response) => {
+  const { confirmPassword, oldPassword, newPassword } = req.body;
+  const result = await authService.changePassword(
+    req.user.id,
+    oldPassword,
+    newPassword,
+  );
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "change password    successfully.",
+    data: result,
+  });
+});
+
 export const authController = {
   loginUser,
   forgetPasswordToGmail,
   verifyOtp,
   resetPassword,
 
-  resendOtp
+  resendOtp,
+  changePassword,
 };
