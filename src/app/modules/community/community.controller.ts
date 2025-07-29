@@ -4,7 +4,6 @@ import sendResponse from "../../../shared/sendResponse";
 import { communityService } from "./community.service";
 import { communityPostFileQueue } from "../../../helpers/redis";
 
-
 const createPost = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
   req.body.userId = userId;
@@ -20,14 +19,13 @@ const createPost = catchAsync(async (req: Request, res: Response) => {
   const postId = result.id;
 
   if (files?.imageUrl || files?.videoUrl) {
-
     const imageFile = files?.imageUrl?.[0];
     const videoFile = files?.videoUrl?.[0];
-  
+
     communityPostFileQueue.add("upload-community-media", {
       postId,
-      image:imageFile,
-      video:videoFile,
+      image: imageFile,
+      video: videoFile,
     });
   }
 
@@ -38,20 +36,68 @@ const createPost = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-const getAllPost=catchAsync(
-  async (req: Request, res: Response) => {
-  
-    const response = await communityService.getAllPost(req.user.id);
+const getAllPost = catchAsync(async (req: Request, res: Response) => {
+  const response = await communityService.getAllPost(req.user.id);
 
-    sendResponse(res, {
-      statusCode: 200,
-      success: true,
-      message: "all post get successfully",
-      data: response,
-    });
-  }
-);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "all post get successfully",
+    data: response,
+  });
+});
+const postComment = catchAsync(async (req: Request, res: Response) => {
+  req.body.userId = req.user.id;
+  const response = await communityService.postComment(req.body);
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "post comment successfully",
+    data: response,
+  });
+});
+const postLike = catchAsync(async (req: Request, res: Response) => {
+  req.body.userId = req.user.id;
+  const response = await communityService.postLike(req.body);
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: response as unknown as string,
+  });
+});
+const getPostById = catchAsync(async (req: Request, res: Response) => {
+  req.body.userId = req.user.id;
+  const response = await communityService.getPostById(
+    req.params.postId as string
+  );
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "single post retrive successfully",
+    data: response,
+  });
+});
+
+const getUserPost = catchAsync(async (req: Request, res: Response) => {
+  req.body.userId = req.user.id;
+  const response = await communityService.getUserPost(req.user.id as string);
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "user post retrive successfully",
+    data: response,
+  });
+});
+
 export const communityController = {
   createPost,
-  getAllPost
+  getAllPost,
+  postComment,
+  postLike,
+  getPostById,
+  getUserPost,
 };

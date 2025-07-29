@@ -3,8 +3,10 @@ import { activeUsers, chatRooms } from "../socket";
 import {
   ExtendedWebSocket,
   MessageTypes,
+  storeAndSendPrivateMessage,
 
 } from "./socket.helpers";
+import { redisSocketService } from "./socket.redis";
 
 
 export const handleJoinApp = async (
@@ -61,14 +63,14 @@ async function handleSendPrivateMessage(
   const conversationId = senderSocket?.chatroomId || ws.chatroomId;
   try {
     if (conversationId) {
-      // await storeAndSendPrivateMessage(
-      //   ws,
-      //   userId,
-      //   receiverId,
-      //   content,
-      //   imageUrl,
-      //   conversationId
-      // );
+      await storeAndSendPrivateMessage(
+        ws,
+        userId,
+        receiverId,
+        content,
+        imageUrl,
+        conversationId
+      );
     } else {
       ws.send(
         JSON.stringify({

@@ -1,100 +1,144 @@
+import { redis } from "../helpers/redis";
+import prisma from "../shared/prisma";
 
-// import prisma from "../shared/prisma";
+const MAX_CONVERSATIONS = 15;
 
-// // const storeUserConnection = async (userId: string) => {
-// //   const user = await prisma.user.findUnique({
-// //     where: { id: userId },
-// //     select: {
-// //       passenger: { select: { avater: true, fullName: true } },
-// //       driver: { select: { avater: true, fullName: true } },
-// //     },
-// //   });
-// //   if (!user) return;
-// //   const image = user?.passenger?.avater || user?.driver?.avater || " ";
-// //   const username = user?.passenger?.fullName || user?.driver?.fullName || " ";
+const storeUserConnection = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      profileImage: true,
+      id: true,
+      fullName: true,
+    },
+  });
+  if (!user) return;
+  const image = user?.profileImage || " ";
+  const username = user?.fullName || " ";
+  await redis.hset(`user:${userId}`, {
+    id: user.id,
+    username,
+    image,
+  });
+};
 
-// //   await redis.hmset(`user:${userId}`, {
-// //     username,
-// //     image,
-// //   });
-// // };
+const getUserDetails = async (userId: string) => {
+  let userDetails = await redis.hgetall(`user:${userId}`);
 
-// const getUserDetails = async (userId: string): Promise<any | null> => {
-//   const userDetails = await redis.hgetall(`user:${userId}`);
-//   return userDetails;
-// };
+  if (!userDetails || Object.keys(userDetails).length === 0) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true, profileImage: true },
+    });
 
-// const removeUserConnection = async (userId: string) => {
-//   await redis.del(`user:${userId}`);
-//   await removeDriverLocationFromRedis(userId);
-//   await redis.zremrangebyrank(`conversation:list:${userId}`, 0, -1);
-// };
+    if (!dbUser) return null;
 
-// const removeDriverLocationFromRedis = async (driverId: string) => {
-//   const locationKey = "driver-locations-geo";
-//   const detailsKey = "driver-locations-details";
-//   await redis.zrem(locationKey, driverId);
-//   await redis.hdel(detailsKey, driverId);
-// };
+    userDetails = {
+      id: dbUser.id,
+      username: dbUser.fullName,
+      image: dbUser.profileImage,
+    };
+  }
 
-// const updateConversationList = async (
-//   user1Id: string,
-//   user2Id: string,
-//   conversationId: string,
-//   lastMessage: string
-// ) => {
-//   const messagePreview = lastMessage.slice(0, 50);
-//   const timestamp = Date.now();
-//   await redis.zadd(
-//     `conversation:list:${user1Id}`,
-//     timestamp.toString(),
-//     user2Id
-//   );
+  return userDetails;
+};
 
-//   await redis.zadd(
-//     `conversation:list:${user2Id}`,
-//     timestamp.toString(),
-//     user2Id
-//   );
-//   await redis.hset(
-//     `conversation:details:${conversationId}`,
-//     "lastMessage",
-//     messagePreview,
-//     "timestamp",
-//     timestamp
-//   );
-// };
+const removeUserConnection = async (userId: string) => {
+  await redis.del(`user:${userId}`);
+  await redis.zremrangebyrank(`conversation:list:${userId}`, 0, -1);
+};
 
-// // const getConversationList = async (
-// //   userId: string,
-// //   page: number = 1,
-// //   limit: number = 10
-// // ) => {
-// //   const skip = (page - 1) * limit;
+const updateConversationList = async (
+  user1Id: string,
+  user2Id: string,
+  conversationId: string,
+  lastMessage: string
+) => {
+  const messagePreview = lastMessage?.slice(0, 50) || "📷 Image";
+  const timestamp = Date.now();
 
-// //   const conversationIds = await redis.zrevrange(
-// //     `conversation:list:${userId}`,
-// //     skip,
-// //     skip + limit - 1
-// //   );
+  await Promise.all([
+    redis.zadd(`conversation:list:${user1Id}`, timestamp, conversationId),
+    redis.zadd(`conversation:list:${user2Id}`, timestamp, conversationId),
+    redis.zremrangebyrank(
+      `conversation:list:${user1Id}`,
+      0,
+      -MAX_CONVERSATIONS - 1
+    ),
+    redis.zremrangebyrank(
+      `conversation:list:${user2Id}`,
+      0,
+      -MAX_CONVERSATIONS - 1
+    ),
+    redis.hset(
+      `conversation:details:${conversationId}`,
+      "lastMessage",
+      messagePreview,
+      "timestamp",
+      timestamp.toString(),
+      "user1Id",
+      user1Id,
+      "user2Id",
+      user2Id
+    ),
+  ]);
+};
 
-// //   const userDetailsPromises = conversationIds.map(async (conversationId) => {
-// //     const otherUserId = await redis
-// //       .zrange(`conversation:list:${userId}`, 0, -1)
-// //       .then((userIds) => userIds.find((id) => id !== userId));
+const getConversationListFromRedis = async (
+  userId: string,
+  page = 1,
+  limit = 10
+) => {
+  const start = (page - 1) * limit;
+  const end = start + limit - 1;
 
-// //     const userDetails = await getUserDetails(otherUserId as string);
-// //     return userDetails;
-// //   });
-// //   const resolvedUserDetails = await Promise.all(userDetailsPromises);
-// //   return resolvedUserDetails.filter(Boolean);
-// // };
+  const conversationIds = await redis.zrevrange(
+    `conversation:list:${userId}`,
+    start,
+    end
+  );
 
-// export const redisSocketService = {
+  if (!conversationIds.length) return null;
 
-//   getUserDetails,
-//   removeUserConnection,
-//   removeDriverLocationFromRedis,
-//   // getConversationList,
-//   updateConversationList,
-// };
+  const conversations = await Promise.all(
+    conversationIds.map(async (cid: any) => {
+      const details = await redis.hgetall(`conversation:details:${cid}`);
+
+      const otherUserId =
+        details.user1Id === userId ? details.user2Id : details.user1Id;
+
+      const userDetails = await redisSocketService.getUserDetails(otherUserId);
+
+      const unseenCount = await redis.hget(
+        `conversation:unseen:${cid}`,
+        userId
+      );
+
+      return {
+        conversationId: cid,
+        type: "private",
+        participants: userDetails,
+        lastMessage: details.lastMessage,
+        lastMessageTime: new Date(Number(details.timestamp)),
+        unseen: Number(unseenCount || 0),
+      };
+    })
+  );
+
+  return {
+    conversations,
+    meta: {
+      page,
+      limit,
+      total: await redis.zcard(`conversation:list:${userId}`),
+    },
+  };
+};
+
+export const redisSocketService = {
+  storeUserConnection,
+  getUserDetails,
+  removeUserConnection,
+  getConversationListFromRedis,
+  updateConversationList,
+};

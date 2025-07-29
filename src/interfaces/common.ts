@@ -15,3 +15,14 @@ export type IGenericErrorResponse = {
   message: string;
   errorMessages: IGenericErrorMessage[];
 };
+export interface RedisMessage {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  imageUrl?: string;
+  createdAt: string;
+  read?: boolean;
+  updatedAt?: string;
+  conversationId: string;
+}

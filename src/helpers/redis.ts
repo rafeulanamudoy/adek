@@ -9,6 +9,7 @@ import { emailTemplate } from "./emailTemplate";
 import uploadToDigitalOcean from "./uploadToDigitalOcean";
 import prisma from "../shared/prisma";
 import { constructFromSymbol } from "date-fns/constants";
+import { RedisMessage } from "../interfaces/common";
 
 // Redis Configuration
 const redisOptions: RedisOptions = {
@@ -35,7 +36,9 @@ const conversationListQueue = new Queue("conversationList", {
   connection: redis,
 });
 const assignJobQueue = new Queue("assign-job-queue", { connection: redis });
-
+const messagePersistenceQueue = new Queue("messagePersistenceQueue", {
+  connection: redis,
+});
 const communityPostFileQueue = new Queue("community-post-queue", {
   connection: redis,
 });
@@ -127,6 +130,81 @@ const conversationListWorker = new Worker(
   },
   { connection: redis }
 );
+const messagePersistenceWorker = new Worker(
+  "messagePersistenceQueue",
+  async (job) => {
+    const { conversationId } = job.data;
+    const redisKey = `chat:messages:${conversationId}`;
+    const backupKey = `chat:messages:backup:${conversationId}`;
+    let rawMessages: string[] = [];
+    let rawMessagesWithScores: (string | number)[] = [];
+
+    const backupExists = await redis.exists(backupKey);
+    if (backupExists) {
+      rawMessagesWithScores = await redis.zrevrange(
+        backupKey,
+        0,
+        -1,
+        "WITHSCORES"
+      );
+    } else {
+      rawMessagesWithScores = await redis.zrevrange(
+        redisKey,
+        0,
+        -1,
+        "WITHSCORES"
+      );
+      if (rawMessagesWithScores.length > 0) {
+        const args: (string | number)[] = [];
+        for (let i = 0; i < rawMessagesWithScores.length; i += 2) {
+          const member = rawMessagesWithScores[i];
+          const score = rawMessagesWithScores[i + 1];
+          args.push(score, member);
+        }
+        await redis.zadd(backupKey, ...args);
+      }
+    }
+
+    if (!rawMessagesWithScores?.length) {
+      return `No messages to persist for ${conversationId}`;
+    }
+
+    rawMessages = [];
+    for (let i = 0; i < rawMessagesWithScores.length; i += 2) {
+      rawMessages.push(rawMessagesWithScores[i] as string);
+    }
+    const parsed: RedisMessage[] = rawMessages.map((msg) => JSON.parse(msg));
+
+    try {
+      await prisma.$transaction(
+        parsed.map((m) =>
+          prisma.privateMessage.upsert({
+            where: { id: m.id },
+            update: {},
+            create: {
+              id: m.id!,
+              senderId: m.senderId,
+              receiverId: m.receiverId,
+              content: m.content,
+              imageUrl: m.imageUrl || null,
+              createdAt: new Date(m.createdAt),
+              updatedAt: new Date(m.createdAt),
+              read: m.read || false,
+              conversationId: m.conversationId,
+            },
+          })
+        )
+      );
+
+      await Promise.all([redis.del(redisKey), redis.del(backupKey)]);
+      return `✅ Persisted ${parsed.length} messages for ${conversationId}`;
+    } catch (error: any) {
+      return `❌ DB error: ${error.message || error}`;
+    }
+  },
+  { connection: redis }
+);
+
 
 otpPhoneWorker.on("completed", (job) => {
   console.log(`✅ OTP job completed: ${job.id}`);
@@ -183,6 +261,10 @@ export async function cleanQueues() {
     assignJobQueue.clean(0, 1000, "failed"),
     assignJobQueue.clean(0, 1000, "delayed"),
     assignJobQueue.clean(0, 1000, "wait"),
+     messagePersistenceQueue.clean(0, 1000, "completed"),
+    messagePersistenceQueue.clean(0, 1000, "failed"),
+    messagePersistenceQueue.clean(0, 1000, "delayed"),
+    messagePersistenceQueue.clean(0, 1000, "wait"),
   ]);
 }
 async function handleJobFailure(job: any, err: any) {
@@ -199,7 +281,7 @@ otpEmailWorker.on("failed", handleJobFailure);
 
 conversationListWorker.on("failed", handleJobFailure);
 communityPostFileUploadWorker.on("failed", handleJobFailure);
-
+messagePersistenceWorker.on("failed", handleJobFailure);
 // Run cleanup at startup
 cleanQueues().catch((err) => console.error("❌ Error cleaning queues:", err));
 // Graceful shutdown
@@ -211,7 +293,7 @@ process.on("SIGINT", async () => {
   await conversationListQueue.close();
   await conversationListWorker.close();
   await communityPostFileQueue.close();
-
+  await messagePersistenceWorker.close();
   console.log("✅ Workers and Queues closed gracefully");
   process.exit(0);
 });
@@ -224,4 +306,5 @@ export {
   conversationListQueue,
   assignJobQueue,
   communityPostFileQueue,
+  messagePersistenceQueue
 };

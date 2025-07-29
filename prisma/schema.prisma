@@ -187,7 +187,7 @@ model Conversation {
   user2          User?              @relation("User2Convarsion", fields: [user2Id], references: [id], onDelete: Cascade)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
-  status         ConversationStatus @default(ACTIVE)
+  status         ConversationStatus @default(DEACTIVE)
   privateMessage PrivateMessage[]
 
   @@unique([user1Id, user2Id])
@@ -267,7 +267,7 @@ model Like {
   createdAt DateTime @default(now())
 
 
-  communityPostId String?        @db.ObjectId
+
  
 
   @@unique([postId, userId])

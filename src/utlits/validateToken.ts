@@ -1,8 +1,10 @@
+
 import config from "../config";
 import { jwtHelpers } from "../helpers/jwtHelpers";
+
 import { ExtendedWebSocket, MessageTypes } from "./socket.helpers";
 
-export function validateToken(ws: ExtendedWebSocket, token: string): boolean {
+export async function validateToken(ws: ExtendedWebSocket, token: string): Promise<boolean | string> {
   if (!token) {
     ws.send(
       JSON.stringify({
@@ -19,11 +21,14 @@ export function validateToken(ws: ExtendedWebSocket, token: string): boolean {
       token,
       config.jwt.jwt_secret as string
     );
+
     ws.userId = decodedToken.id;
+
+
     ws.send(
       JSON.stringify({
         type: MessageTypes.AUTH_SUCCESS,
-        message: "Authentication successful",
+        message: "Token validated successfully.",
         userId: decodedToken.id,
       })
     );

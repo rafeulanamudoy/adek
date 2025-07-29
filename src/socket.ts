@@ -1,20 +1,21 @@
 import { WebSocketServer } from "ws";
-import {
-  ExtendedWebSocket,
- 
-  MessageTypes,
-} from "./utlits/socket.helpers";
-import { validateToken } from "./utlits/validateToken";
+import { chatService } from "./app/modules/chat/chat.service";
+
 import {
   handleJoinApp,
   handleJoinPrivateChat,
   handleSendPrivateMessage,
 } from "./utlits/private.chat";
-import { chatService } from "./app/modules/chat/chat.service";
-
-
-import { authService } from "./app/modules/auth/auth.service";
+import { validateToken } from "./utlits/validateToken";
 import startKeepAlive from "./utlits/startKeepAlive";
+import {
+  ExtendedWebSocket,
+  MessageTypes,
+  handleDisconnect,
+} from "./utlits/socket.helpers";
+
+import { parse } from "url";
+import querystring from "querystring";
 
 export const activeUsers = new Map<string, ExtendedWebSocket>();
 
@@ -25,30 +26,38 @@ let wss: WebSocketServer;
 export default function socketConnect(server: any) {
   wss = new WebSocketServer({ server });
 
-  wss.on("connection", (ws: ExtendedWebSocket, req) => {
-    const token = req.headers["x-token"] as string;
-    const userId = validateToken(ws, token);
+  wss.on("connection", async (ws: ExtendedWebSocket, req) => {
+    const urlParts = parse(req.url || "");
+    const queryParams = querystring.parse(urlParts.query || "");
+
+ 
+    let token = req.headers["x-token"] as string;
+    if (!token) {
+      token = queryParams.token as string;
+    }
+
+    const userId = await validateToken(ws, token);
+    
+
     if (!userId) {
       return;
     }
     const keepAliveInterval = startKeepAlive(ws);
-
     ws.on("message", async (data: string) => {
       try {
         let parsedData = JSON.parse(data);
         parsedData.userId = userId;
 
         switch (parsedData.type) {
+          case MessageTypes.JOIN_APP:
+            await handleJoinApp(ws, userId as unknown as string, activeUsers);
+            break;
           case MessageTypes.JOIN_PRIVATE_CHAT:
             await handleJoinPrivateChat(ws, parsedData, chatRooms);
-            break;
-          case MessageTypes.JOIN_APP:
-            await handleJoinApp(ws, userId, activeUsers);
             break;
           case MessageTypes.SEND_PRIVATE_MESSAGE:
             await handleSendPrivateMessage(ws, parsedData);
             break;
-         
           case MessageTypes.CONVERSATION_LIST:
             try {
               const { userId, page = 1, limit = 10 } = parsedData;
@@ -77,19 +86,16 @@ export default function socketConnect(server: any) {
             }
             break;
 
-         
-
-         
           default:
-            console.log("Unknown WebSocket message type:", parsedData.type);
+            console.log("Unknown WebSocket message types:", parsedData.type);
         }
       } catch (error) {
-        console.error("Error handling WebSocket message:", error);
+        console.error("Error handling WebSocket messages:", error);
       }
     });
     ws.on("close", () => {
       clearInterval(keepAliveInterval);
-      // handleDisconnect(ws);
+      handleDisconnect(ws);
     });
   });
 }

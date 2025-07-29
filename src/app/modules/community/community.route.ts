@@ -14,6 +14,11 @@ router.post(
   communityController.createPost
 );
 
-router.get("/get-all-post",auth(),communityController.getAllPost)
+router.get("/get-all-post", auth(), communityController.getAllPost);
+router.post("/post-comment", auth(), communityController.postComment);
+router.post("/post-like", auth(), communityController.postLike);
+
+router.get("/get-post-by-id/:postId", auth(), communityController.getPostById);
+router.get("/get-user-post", auth(), communityController.getUserPost);
 
 export const communityRoute = router;

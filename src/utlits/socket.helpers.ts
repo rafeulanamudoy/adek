@@ -1,8 +1,12 @@
-import { WebSocket } from "ws";
-import prisma from "../shared/prisma";
+import { ObjectId } from "mongodb";
+
+import { redisSocketService } from "./socket.redis";
 import { activeUsers, chatRooms } from "../socket";
-
-
+import { messagePersistenceQueue, redis } from "../helpers/redis";
+import WebSocket from "ws";
+import { chatService } from "../app/modules/chat/chat.service";
+import prisma from "../shared/prisma";
+import { ConversationStatus } from "@prisma/client";
 interface ExtendedWebSocket extends WebSocket {
   userId?: string;
   user2Id?: string;
@@ -14,17 +18,15 @@ export enum MessageTypes {
   JOIN_PRIVATE_CHAT = "joinPrivateChat",
   SEND_PRIVATE_MESSAGE = "sendPrivateMessage",
   RECEIVED_PRIVATE_MESSAGE = "receivePrivateMessage",
-  NEARBY_DRIVER_LIST = "nearbyDriverList",
   CONVERSATION_LIST = "conversationList",
-  JOIN_CONVARSATION_LIST = "joinConvarsationList",
-  ORDER_LIST = "orderList",
-  NOTIFY_DRIVER = "NOTIFY_DRIVER",
+  JOIN_CONVERSATION_LIST = "joinConversationList",
   AUTH_SUCCESS = "authSuccess",
   AUTH_FAILURE = "authFailure",
   FAILURE = "Failure",
   JOIN_APP = "joinApp",
-  UPDATE_DRIVER_LOCATION = "updateDriverLocation",
 }
+
+const MAX_REDIS_MESSAGES = 5;
 
 function broadcastToGroup(
   groupId: string,
@@ -41,7 +43,7 @@ function broadcastToGroup(
   });
 }
 
-export const handleConvarsationJoinEvent = async (
+export const handleConversationJoinEvent = async (
   ws: ExtendedWebSocket,
   userId: string,
   activeUsers: Map<
@@ -53,110 +55,168 @@ export const handleConvarsationJoinEvent = async (
   activeUsers.set(userId, { socket: ws, lastActiveAt: new Date() });
   ws.send(
     JSON.stringify({
-      type: MessageTypes.JOIN_CONVARSATION_LIST,
+      type: MessageTypes.JOIN_CONVERSATION_LIST,
       message: `Successfully joined`,
     })
   );
 };
 
-// async function storeAndSendPrivateMessage(
-//   ws: ExtendedWebSocket,
-//   senderId: string,
-//   receiverId: string,
-//   content: string,
-//   imageUrl: string,
-//   conversationId: string
-// ) {
-//   try {
-//     const [senderDetails, receiverDetails] = await Promise.all([
-//       redisSocketService.getUserDetails(senderId),
-//       redisSocketService.getUserDetails(receiverId),
-//     ]);
+async function storeAndSendPrivateMessage(
+  ws: ExtendedWebSocket,
+  senderId: string,
+  receiverId: string,
+  content: string,
+  imageUrl: string,
+  conversationId: string
+) {
+  try {
+    const timestamp = new Date().toISOString();
+    const [senderDetails, receiverDetails] = await Promise.all([
+      redisSocketService.getUserDetails(senderId),
+      redisSocketService.getUserDetails(receiverId),
+    ]);
 
-//     const messagePayload = {
-//       type: MessageTypes.RECEIVED_PRIVATE_MESSAGE,
-//       senderId,
-//       receiverId,
-//       content,
-//       imageUrl,
-//     };
+    // console.log(senderDetails,"check sender details")
+    // console.log(receiverDetails,"check reciver details")
 
-//     const chatRoom = chatRooms.get(conversationId);
+    const messagePayload = {
+      id: new ObjectId().toString(),
+      senderId,
+      receiverId,
+      content,
+      imageUrl,
+      createdAt: timestamp,
+      read: false,
+      updatedAt: timestamp,
+    };
 
-//     if (chatRoom) {
-//       for (const clientSocket of chatRoom) {
-//         if (clientSocket.readyState === clientSocket.OPEN) {
-//           const isSender = clientSocket.userId === senderId;
+    const chatRoom = chatRooms.get(conversationId);
+    const receiverSocket= activeUsers.get(receiverId)
 
-//           const enrichedPayload = {
-//             ...messagePayload,
-//             receiver: isSender ? receiverDetails : senderDetails,
-//           };
+    console.log(receiverSocket,"check receiversokcet")
+    
 
-//           clientSocket.send(JSON.stringify(enrichedPayload));
-//         }
-//       }
-//     }
-//     await conversationListQueue.add(
-//       "conversationList",
-//       { user1Id: senderId, user2Id: receiverId },
-//       {
-//         jobId: `conversationList:${senderId}-${receiverId}-${new Date()}`,
-//         removeOnComplete: true,
-//         delay: 0,
-//         removeOnFail: {
-//           count: 3,
-//         },
-//       }
-//     );
-//     await prisma.conversation.update({
-//       where: {
-//         id: conversationId,
-//       },
-//       data: {
-//         lastMessage: content?.slice(0, 50),
-//         privateMessage: {
-//           create: {
-//             content,
-//             receiverId,
-//             senderId,
-//             imageUrl,
-//           },
-//         },
-//       },
-//     });
-//   } catch (error: any) {
-//     ws.send(
-//       JSON.stringify({
-//         type: MessageTypes.FAILURE,
-//         message: `Error sending message: ${error.message || error}`,
-//       })
-//     );
-//   }
-// }
+    if (chatRoom) {
+      for (const clientSocket of chatRoom) {
+        if (clientSocket.readyState === clientSocket.OPEN) {
+          const isSender = clientSocket.userId === senderId;
+          clientSocket.send(
+            JSON.stringify({
+              ...messagePayload,
+              conversationId,
+              type: MessageTypes.RECEIVED_PRIVATE_MESSAGE,
+              receiver: isSender ? receiverDetails : senderDetails,
+            })
+          );
+        }
+      }
+      
+    }
 
-// Handle user disconnection
-// function handleDisconnect(ws: ExtendedWebSocket) {
-//   try {
-//     if (ws.userId) {
-//       activeUsers.delete(ws.userId);
-//       redisSocketService.removeUserConnection(ws.userId);
-//       if (ws.chatroomId && chatRooms.has(ws.chatroomId)) {
-//         const chatRoom = chatRooms.get(ws.chatroomId);
-//         chatRoom?.delete(ws);
-//         if (chatRoom && chatRoom.size === 0) {
-//           chatRooms.delete(ws.chatroomId);
-//         }
-//       }
-//     }
-//   } catch (error) {
-//     return;
-//   }
-// }
+    const redisKey = `chat:messages:${conversationId}`;
+    const messageObject = {
+      ...messagePayload,
+      conversationId,
+    };
+
+    const keyType = await redis.type(redisKey);
+
+    if (keyType !== "zset" && keyType !== "none") {
+      await redis.del(redisKey);
+    }
+
+    await redis.zadd(
+      redisKey,
+      new Date(timestamp).getTime(),
+      JSON.stringify(messageObject)
+    );
+    await redis.hincrby(`conversation:unseen:${conversationId}`, receiverId, 1);
+    await redisSocketService.updateConversationList(
+      senderId,
+      receiverId,
+      conversationId,
+      content
+    );
+    await prisma.conversation.update({
+      where: {
+        id: conversationId,
+      },
+      data: {
+        lastMessage: content ? content : imageUrl,
+        status: ConversationStatus.ACTIVE,
+      },
+    });
+
+    const [senderConversationList, receiverConversationList] =
+      await Promise.all([
+        redisSocketService.getConversationListFromRedis(senderId, 1, 10),
+        redisSocketService.getConversationListFromRedis(receiverId, 1, 10),
+      ]);
+
+    const updatedLists = [senderId, receiverId];
+    updatedLists.forEach((userId) => {
+      const socket = activeUsers.get(userId);
+      if (socket && socket.readyState === socket.OPEN) {
+        socket.send(
+          JSON.stringify({
+            type: MessageTypes.CONVERSATION_LIST,
+            result:
+              userId === senderId
+                ? senderConversationList
+                : receiverConversationList,
+          })
+        );
+      }
+    });
+
+    setImmediate(async () => {
+      const listLength = await redis.zcard(redisKey);
+      console.log(listLength, "check message list length");
+      if (listLength >= MAX_REDIS_MESSAGES) {
+        await messagePersistenceQueue.add(
+          "persistMessagesToDB",
+          { conversationId },
+          {
+            jobId: `persist:${conversationId}:${Date.now()}`,
+            removeOnComplete: true,
+            delay: 0,
+            attempts: 3,
+            removeOnFail: { count: 3 },
+          }
+        );
+      }
+    });
+  } catch (error: any) {
+    ws.send(
+      JSON.stringify({
+        type: MessageTypes.FAILURE,
+        message: `Message sending failed: ${error.message || error}`,
+      })
+    );
+  }
+}
+
+function handleDisconnect(ws: ExtendedWebSocket) {
+  try {
+    if (ws.userId) {
+      activeUsers.delete(ws.userId);
+      redisSocketService.removeUserConnection(ws.userId);
+      if (ws.chatroomId && chatRooms.has(ws.chatroomId)) {
+        const chatRoom = chatRooms.get(ws.chatroomId);
+        chatRoom?.delete(ws);
+        if (chatRoom && chatRoom.size === 0) {
+          chatRooms.delete(ws.chatroomId);
+        }
+      }
+    }
+  } catch (error) {
+    return;
+  }
+}
 
 export {
   broadcastToGroup,
-  // storeAndSendPrivateMessage,
   ExtendedWebSocket,
-  // handleDisconnect,
+  handleDisconnect,
+  storeAndSendPrivateMessage,
 };
