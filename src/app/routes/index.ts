@@ -6,6 +6,7 @@ import { chatRoute } from "../modules/chat/chat.routes";
 import { userRoute } from "../modules/user/user.routes";
 import { adminRoute } from "../modules/admin/admin.route";
 import { communityRoute } from "../modules/community/community.route";
+import { groupRoute } from "../modules/group/group.route";
 
 const router = express.Router();
 
@@ -29,6 +30,10 @@ const moduleRoutes = [
   {
     path: "/community",
     route: communityRoute,
+  },
+  {
+    path: "/group",
+    route: groupRoute,
   },
 ];
 

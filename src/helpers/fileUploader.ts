@@ -48,7 +48,7 @@ const communityPostDoc=upload.fields([
   { name: "imageUrl", maxCount: 1 },
   { name: "videoUrl", maxCount: 1 },
 ])
-
+const groupImage = upload.single("groupImage");
 // Export all configured upload handlers
 export const fileUploader = {
   selfie,
@@ -59,5 +59,6 @@ export const fileUploader = {
   articleImage,
   goalImage,
   userImage,
-  communityPostDoc
+  communityPostDoc,
+  groupImage
 };

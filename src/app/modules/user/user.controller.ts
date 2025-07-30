@@ -84,9 +84,9 @@ const getUserPreference = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-const searchUser = catchAsync(async (req: Request, res: Response) => {
+const searchAll = catchAsync(async (req: Request, res: Response) => {
   const { page, limit, searchQuery, branch, serviceYear } = req.query;
-  const result = await userService.searchUser(
+  const result = await userService.searchAll(
     Number(page),
     Number(limit),
     searchQuery as string,
@@ -137,12 +137,42 @@ const getUserJournal = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const updateTrackGoal=catchAsync(async (req: Request, res: Response) => {
+  req.body.userId = req.user.id;
+  const data={
+    userId:req.user.id,
+    goalId:req.params.goalId
+  }
+  const result = await userService.updateTrackGoal(data);
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "track goal update successfully",
+    data: result,
+  });
+});
+
+const getOtherUserProfile=catchAsync(async (req: Request, res: Response) => {
+  
+  const result = await userService.getOtherUserProfile(req.params.id);
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "user profile get successfully",
+    data: result,
+  });
+});
+
 export const userController = {
   createUser,
   updateProfile,
   getUserProfile,
   getUserPreference,
-  searchUser,
+  searchAll,
   addJournal,
   getUserJournal,
+  updateTrackGoal,
+  getOtherUserProfile
 };

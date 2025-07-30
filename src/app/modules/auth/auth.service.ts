@@ -20,7 +20,12 @@ const loginUserIntoDB = async (payload: any) => {
       email: payload.email,
     },
   });
-
+  if (!user.password) {
+    throw new ApiError(
+      400,
+      "User signed up with social login. Please login with Google"
+    );
+  }
   if (!user.isOtpVerify) {
     sendOtpToGmail(user);
 
@@ -52,7 +57,10 @@ const loginUserIntoDB = async (payload: any) => {
     );
   }
 
-  const isPasswordValid = await bcrypt.compare(payload.password, user.password);
+  const isPasswordValid = await bcrypt.compare(
+    payload.password,
+    user.password as string
+  );
 
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid credentials");
@@ -71,7 +79,7 @@ const loginUserIntoDB = async (payload: any) => {
     config.jwt.jwt_secret as string,
     config.jwt.expires_in as string
   );
-  const { password, status, createdAt, updatedAt, ...userInfo } = user;
+  const { password, status, createdAt, updatedAt, socialLoginType,...userInfo } = user;
 
   return {
     accessToken,
@@ -249,36 +257,37 @@ const resendOtp = async (email: string, reason: string) => {
   };
 };
 
-
-export const changePassword = async (userId: string, oldPassword: string, newPassword: string
+export const changePassword = async (
+  userId: string,
+  oldPassword: string,
+  newPassword: string
 ) => {
-  // if (newPassword !== confirmPassword) {
-  //   throw new Error("New password and confirmation do not match.");
-  // }
-
-
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
   });
 
-
-
+  // ✅ If user signed in via social login and doesn't have a password
+  if (!user.password) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Password change is not available for social login accounts."
+    );
+  }
 
   const isMatch = await bcrypt.compare(oldPassword, user.password);
-
   if (!isMatch) {
-    throw new ApiError(httpStatus.CONFLICT,"Old password is incorrect.");
+    throw new ApiError(httpStatus.CONFLICT, "Old password is incorrect.");
   }
 
-  
   const isSamePassword = await bcrypt.compare(newPassword, user.password);
   if (isSamePassword) {
-    throw new Error("New password must be different from the old password.");
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "New password must be different from the old password."
+    );
   }
 
-
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-
 
   await prisma.user.update({
     where: { id: userId },
@@ -287,13 +296,80 @@ export const changePassword = async (userId: string, oldPassword: string, newPas
 
   return { message: "Password changed successfully." };
 };
+
+const socialLoginIntoDb = async (payload: any) => {
+  const email = payload.email.toLowerCase();
+  let accessToken;
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+   
+  });
+
+  if (existingUser) {
+    if (existingUser.socialLoginType !== payload.socialLoginType) {
+      throw new ApiError(
+        httpStatus.NOT_ACCEPTABLE,
+        `You have already signed up using ${existingUser.socialLoginType}. Please continue using the same method.`
+      );
+    }
+
+    accessToken = jwtHelpers.generateToken(
+      existingUser,
+      config.jwt.jwt_secret as string,
+      config.jwt.expires_in as string
+    );
+
+
+    const { password,createdAt,updatedAt,socialLoginType,status, ...userInfo } = existingUser;
+
+    switch (existingUser.status) {
+      case UserStatus.PENDING:
+      case UserStatus.BLOCKED:
+        return { accessToken: null, userInfo };
+
+      case UserStatus.ACTIVE:
+        return { accessToken, userInfo };
+
+      default:
+        throw new ApiError(
+          httpStatus.INTERNAL_SERVER_ERROR,
+          "Unexpected user status."
+        );
+    }
+  }
+
+  const userData: any = {
+    email,
+    fullName: payload.fullName,
+    socialLoginType: payload.socialLoginType,
+    fcmToken: payload.fcmToken,
+    profileImage: payload.profileImage || "",
+    role: payload.role,
+    status: UserStatus.PENDING,
+  };
+
+  const newUser = await prisma.user.create({
+    data: userData,
+  });
+
+  accessToken = jwtHelpers.generateToken(
+    newUser,
+    config.jwt.jwt_secret as string,
+    config.jwt.expires_in as string
+  );
+
+  return { accessToken, status: UserStatus.PENDING };
+};
+
 export const authService = {
   loginUserIntoDB,
 
   forgetPasswordToGmail,
-  
+
   verifyOtp,
   resetPassword,
   resendOtp,
-  changePassword
+  changePassword,
+  socialLoginIntoDb,
 };

@@ -143,10 +143,10 @@ const getUserPreference = async (
     goalPage = 1,
     soundPage = 1,
     articleLimit = 5,
-    goalLimit = 5,
+    goalLimit = 3,
     soundLimit = 5,
     userPage = 1,
-    userLimit = 5,
+    userLimit = 7,
     mood,
     includeArticle = true,
     includeGoal = true,
@@ -184,7 +184,7 @@ const getUserPreference = async (
 
   const userFilter: any = {
     Profile: {
-      AND: [
+      OR: [
         mood
           ? { mood: { has: mood } }
           : user.Profile?.mood
@@ -233,6 +233,11 @@ const getUserPreference = async (
           id: true,
           profileImage: true,
           fullName: true,
+          Profile: {
+            select: {
+              branch: true,
+            },
+          },
         },
       })
     );
@@ -254,6 +259,22 @@ const getUserPreference = async (
           mood: true,
           title: true,
           subtitle: true,
+          goalImage: true,
+          // TrackGoal: {
+          //   where: {
+          //     userId: userId,
+          //   },
+          // },
+
+          _count: {
+            select: {
+              TrackGoal: {
+                where: {
+                  userId: userId,
+                },
+              },
+            },
+          },
         },
       })
     );
@@ -388,10 +409,70 @@ const getUserPreference = async (
 //   };
 // };
 
+const searchAll = async (
+  page: number = 1,
+  limit: number = 10,
+  searchQuery: string = "",
+  filter: { branch?: string; serviceYear?: string } = {}
+) => {
+  const profileFilter: Prisma.ProfileWhereInput = {};
 
+  if (filter.branch) {
+    profileFilter.branch = filter.branch as Branch;
+  }
 
+  if (filter.serviceYear) {
+    profileFilter.serviceYear = filter.serviceYear as ServiceYear;
+  }
 
+  const additionalFilter: Prisma.UserWhereInput = {
+    NOT: {
+      role: "ADMIN",
+    },
+    Profile: Object.keys(profileFilter).length ? profileFilter : undefined,
+  };
 
+  const users = searchAndPaginate<
+    typeof prisma.user,
+    Prisma.UserWhereInput,
+    Prisma.UserSelect
+  >(
+    prisma.user,
+    ["fullName", "email"],
+    page || 1,
+    limit || 10,
+    searchQuery,
+    additionalFilter,
+    {
+      select: {
+        id: true,
+        profileImage: true,
+        fullName: true,
+        Profile: {
+          select: {
+            branch: true,
+          },
+        },
+      },
+    }
+  );
+
+  const group = prisma.group.findMany({
+    select: {
+      name: true,
+      groupImage: true,
+      _count: {
+        select: {
+          members: true,
+        },
+      },
+    },
+  });
+
+  const [userData, groupData] = await Promise.all([users, group]);
+
+  return { users: userData, group: groupData };
+};
 const searchUser = async (
   page: number = 1,
   limit: number = 10,
@@ -432,14 +513,15 @@ const searchUser = async (
         fullName: true,
         email: true,
         profileImage: true,
+        user1Convarsion: true,
+        user2Convarsion: true,
         Profile: true,
       },
     }
   );
 
-  return users;
+  return { users };
 };
-
 const addJournal = async (payload: {
   userId: string;
   content: string;
@@ -490,13 +572,61 @@ const getUserJournal = async (userId: string, start: Date, end: Date) => {
 
   return await journalCollection.aggregate(pipeline).toArray();
 };
+
+const updateTrackGoal = async (payload: any) => {
+  const result = await prisma.trackGoal.upsert({
+    where: {
+      userId_goalId: {
+        userId: payload.userId,
+        goalId: payload.goalId,
+      },
+    },
+    update: {
+      isCompleted: true,
+      completedAt: new Date(),
+    },
+    create: {
+      userId: payload.userId,
+      goalId: payload.goalId,
+      isCompleted: true,
+      completedAt: new Date(),
+    },
+  });
+
+  return result;
+};
+
+const getOtherUserProfile = async (userId: string) => {
+  const result = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      Profile: true,
+      profileImage: true,
+      coverPhoto: true,
+    },
+  });
+
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User profile not found");
+  }
+
+  return result;
+};
+
 export const userService = {
   createUser,
   updateProfile,
 
   getUserProfile,
   getUserPreference,
-  searchUser,
+  searchAll,
   addJournal,
   getUserJournal,
+  updateTrackGoal,
+  searchUser,
+  getOtherUserProfile,
 };

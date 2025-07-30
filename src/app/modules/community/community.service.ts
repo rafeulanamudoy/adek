@@ -1,6 +1,8 @@
 import prisma from "../../../shared/prisma";
 
 const createPost = async (payload: any) => {
+
+  console.log(payload,"check post payload")
   const result = await prisma.communityPost.create({
     data: {
       userId: payload.userId,
@@ -142,6 +144,7 @@ const getUserPost = async (userId: string) => {
   return result;
 };
 const postComment = async (payload: any) => {
+
   const result = await prisma.comment.create({
     data: {
       parentCommentId: payload.parentCommentId,

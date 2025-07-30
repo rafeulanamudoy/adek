@@ -22,5 +22,10 @@ router.patch(
   auth(),
   chatController.markMessagesAsRead
 );
+router.get(
+  "/get-group-message/:groupId",
+  auth(),
+  chatController.getSingleGroupMessageList
+);
 
 export const chatRoute = router;

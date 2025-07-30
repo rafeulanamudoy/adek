@@ -24,6 +24,9 @@ export enum MessageTypes {
   AUTH_FAILURE = "authFailure",
   FAILURE = "Failure",
   JOIN_APP = "joinApp",
+  JOIN_GROUP = "joinGroup",
+  SEND_GROUP_MESSAGE = "sendGroupMessage",
+  RECEIVED_GROUP_MESSAGE = "receiveGroupMessage",
 }
 
 const MAX_REDIS_MESSAGES = 5;
@@ -91,10 +94,9 @@ async function storeAndSendPrivateMessage(
     };
 
     const chatRoom = chatRooms.get(conversationId);
-    const receiverSocket= activeUsers.get(receiverId)
+    const receiverSocket = activeUsers.get(receiverId);
 
-    console.log(receiverSocket,"check receiversokcet")
-    
+    console.log(receiverSocket, "check receiversokcet");
 
     if (chatRoom) {
       for (const clientSocket of chatRoom) {
@@ -110,7 +112,6 @@ async function storeAndSendPrivateMessage(
           );
         }
       }
-      
     }
 
     const redisKey = `chat:messages:${conversationId}`;

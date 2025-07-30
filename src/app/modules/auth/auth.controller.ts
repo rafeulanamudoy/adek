@@ -80,7 +80,16 @@ const changePassword = catchAsync(async (req: any, res: Response) => {
     data: result,
   });
 });
+const socialLoginIntoDb = catchAsync(async (req: Request, res: Response) => {
+  const result = await authService.socialLoginIntoDb(req.body);
 
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "social login successfully",
+    data: result,
+  });
+});
 export const authController = {
   loginUser,
   forgetPasswordToGmail,
@@ -89,4 +98,5 @@ export const authController = {
 
   resendOtp,
   changePassword,
+  socialLoginIntoDb
 };

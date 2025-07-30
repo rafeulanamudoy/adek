@@ -63,13 +63,17 @@ const uploadToDigitalOcean = async (
 
     const data = await upload.done();
 
-    const fileUrl =
+    const fileUrlRaw =
       data.Location ||
       `${DO_CONFIG.endpoint}/${DO_CONFIG.spaceName}/${fileName}`;
 
+    const fileUrl = fileUrlRaw.startsWith("http")
+      ? fileUrlRaw
+      : `https://${fileUrlRaw}`;
+
     return fileUrl;
   } catch (error) {
-     console.log(error,"check error")
+    console.log(error, "check error");
     throw new ApiError(
       500,
       error instanceof Error

@@ -1,6 +1,8 @@
+import { Request } from "express";
 import config from "../../../config";
 import prisma from "../../../shared/prisma";
 import { conversationPrivateFields } from "../../../utlits/prisma.common.field";
+import { redis } from "../../../helpers/redis";
 
 const createConversationIntoDB = async (user1Id: string, user2Id: string) => {
   try {
@@ -178,10 +180,126 @@ const markMessagesAsRead = async (userId: string, conversationId: string) => {
   return { success: true, message: "Messages marked as read" };
 };
 
+const singleGroupMessageIntoDB = async (req: Request) => {
+  const groupId = req.params.groupId as string;
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const result = await prisma.groupMessage.findMany({
+    where: { groupId: groupId },
+    select: {
+      id: true,
+      content: true,
+      groupId: true,
+      createdAt: true,
+      sender: { select: { id: true, fullName: true, profileImage: true } },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    skip,
+    take: limit,
+  });
+
+  const totalMessage = await prisma.groupMessage.count({
+    where: { groupId: groupId },
+  });
+
+  const totalPages = Math.ceil(totalMessage / limit);
+
+  return {
+    result,
+    meta: {
+      page: totalPages,
+      limit: limit,
+      total: totalMessage,
+    },
+  };
+};
+
+const getMergedMessageList = async (
+  conversationId: string,
+  userId: string,
+  page: number,
+  limit: number
+) => {
+  const start = (page - 1) * limit;
+  const end = start + limit - 1;
+  const redisKey = `chat:messages:${conversationId}`;
+
+  const [redisCount, dbCount] = await Promise.all([
+    redis.zcard(redisKey),
+    prisma.privateMessage.count({ where: { conversationId } }),
+  ]);
+
+  const total = redisCount + dbCount;
+  const totalPage = Math.ceil(total / limit);
+
+  const messages: any[] = [];
+
+  if (start < redisCount) {
+    const redisEnd = Math.min(end, redisCount - 1);
+    const redisRaw = await redis.zrange(redisKey, start, redisEnd);
+    const redisMessages = redisRaw.map((msg) => JSON.parse(msg));
+
+    const remaining = limit - redisMessages.length;
+    let dbMessages: any[] = [];
+    if (remaining > 0) {
+      dbMessages = await prisma.privateMessage.findMany({
+        where: { conversationId },
+
+        orderBy: { createdAt: "asc" },
+        skip: 0,
+        take: remaining,
+      });
+    }
+
+    messages.push(
+      ...[...redisMessages, ...dbMessages].sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      )
+    );
+  } else {
+    const dbSkip = start - redisCount;
+    const dbMessages = await prisma.privateMessage.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: "asc" },
+      skip: dbSkip,
+      take: limit,
+    });
+
+    messages.push(...dbMessages);
+  }
+
+  await prisma.privateMessage.updateMany({
+    where: {
+      conversationId: conversationId,
+      receiverId: userId,
+      read: false,
+    },
+    data: {
+      read: true,
+    },
+  });
+
+  return {
+    messages,
+    meta: {
+      page,
+      limit,
+      totalPage,
+      total,
+    },
+  };
+};
 export const chatService = {
   getConversationListIntoDB,
   createConversationIntoDB,
   getSingleMessageList,
   markMessagesAsRead,
   chatImageUploadIntoDB,
+  singleGroupMessageIntoDB,
+  getMergedMessageList
 };

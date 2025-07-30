@@ -32,9 +32,19 @@ router.patch(
 );
 
 router.get("/get-profile", auth(), userController.getUserProfile);
-router.get("/get-user-preference",auth(),userController.getUserPreference)
-router.get("/search-user",auth(),userController.searchUser)
-router.post("/add-journal",auth(),userController.addJournal)
-router.get("/get-user-journal",auth(),userController.getUserJournal)
+router.get("/get-user-preference", auth(), userController.getUserPreference);
+router.get("/search-all", auth(), userController.searchAll);
+router.post("/add-journal", auth(), userController.addJournal);
+router.get("/get-user-journal", auth(), userController.getUserJournal);
+router.patch(
+  "/update-track-goal/:goalId",
+  auth(),
+  userController.updateTrackGoal
+);
+router.get(
+  "/get-other-user-profile/:id",
+  auth(),
+  userController.getOtherUserProfile
+);
 
 export const userRoute = router;

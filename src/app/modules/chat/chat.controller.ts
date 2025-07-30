@@ -66,10 +66,24 @@ const markMessagesAsRead = catchAsync(async (req: Request, res: Response) => {
     message: result.message,
   });
 });
+const getSingleGroupMessageList = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await chatService.singleGroupMessageIntoDB(req);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Message retrieved successfully",
+      data: result.result,
+      meta: result.meta,
+    });
+  }
+);
 
 export const chatController = {
   getConversationList,
   getSingleMessageList,
   markMessagesAsRead,
   chatImageUpload,
+  getSingleGroupMessageList
 };

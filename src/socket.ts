@@ -16,11 +16,12 @@ import {
 
 import { parse } from "url";
 import querystring from "querystring";
+import { handleJoinGroup, handleSendGroupMessage } from "./utlits/group.chat";
 
 export const activeUsers = new Map<string, ExtendedWebSocket>();
 
 export const chatRooms = new Map<string, Set<ExtendedWebSocket>>();
-
+const groupRooms = new Map<string, Set<ExtendedWebSocket>>();
 let wss: WebSocketServer;
 
 export default function socketConnect(server: any) {
@@ -57,6 +58,13 @@ export default function socketConnect(server: any) {
             break;
           case MessageTypes.SEND_PRIVATE_MESSAGE:
             await handleSendPrivateMessage(ws, parsedData);
+            break;
+            case MessageTypes.JOIN_GROUP:
+            await handleJoinGroup(ws, parsedData, groupRooms);
+            break;
+
+          case MessageTypes.SEND_GROUP_MESSAGE:
+            await handleSendGroupMessage(parsedData, groupRooms);
             break;
           case MessageTypes.CONVERSATION_LIST:
             try {
