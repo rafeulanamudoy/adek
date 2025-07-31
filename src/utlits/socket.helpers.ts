@@ -7,6 +7,7 @@ import WebSocket from "ws";
 import { chatService } from "../app/modules/chat/chat.service";
 import prisma from "../shared/prisma";
 import { ConversationStatus } from "@prisma/client";
+import { notificationServices } from "../app/modules/notifications/notification.service";
 interface ExtendedWebSocket extends WebSocket {
   userId?: string;
   user2Id?: string;
@@ -80,6 +81,11 @@ async function storeAndSendPrivateMessage(
       redisSocketService.getUserDetails(receiverId),
     ]);
 
+    console.log(
+      receiverDetails,
+      "check receiver deitals from store and send private message"
+    );
+
     const messagePayload = {
       id: new ObjectId().toString(),
       senderId,
@@ -108,21 +114,6 @@ async function storeAndSendPrivateMessage(
         }
       }
     }
-
-    // const redisKey = `chat:messages:${conversationId}`;
-    // const messageObject = { ...messagePayload, conversationId };
-
-    // const keyType = await redis.type(redisKey);
-    // if (keyType !== "zset" && keyType !== "none") {
-    //   await redis.del(redisKey);
-    // }
-
-    // await redis.zadd(
-    //   redisKey,
-    //   new Date(timestamp).getTime(),
-    //   JSON.stringify(messageObject)
-    // );
-    // await redis.hincrby(`conversation:unseen:${conversationId}`, receiverId, 1);
 
     const redisKey = `chat:messages:${conversationId}`;
     const messageObject = { ...messagePayload, conversationId };
@@ -186,7 +177,17 @@ async function storeAndSendPrivateMessage(
           status: ConversationStatus.ACTIVE,
         },
       });
+      const isReceiverConnected =
+        activeUsers.has(receiverId) &&
+        activeUsers.get(receiverId)?.readyState === WebSocket.OPEN;
 
+      if (!isReceiverConnected) {
+        await notificationServices.sendSingleNotification({
+          id: receiverId,
+          body: `${senderDetails?.username} send you a message`,
+          title: senderDetails?.image,
+        });
+      }
       const listLength = await redis.zcard(redisKey);
       if (listLength >= MAX_REDIS_MESSAGES) {
         await messagePersistenceQueue.add(

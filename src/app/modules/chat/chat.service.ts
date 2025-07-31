@@ -4,6 +4,8 @@ import prisma from "../../../shared/prisma";
 import { conversationPrivateFields } from "../../../utlits/prisma.common.field";
 import { redis } from "../../../helpers/redis";
 import { constructFromSymbol } from "date-fns/constants";
+import { fileUploader } from "../../../helpers/fileUploader";
+import uploadToDigitalOcean from "../../../helpers/uploadToDigitalOcean";
 
 const createConversationIntoDB = async (user1Id: string, user2Id: string) => {
   try {
@@ -38,10 +40,9 @@ const createConversationIntoDB = async (user1Id: string, user2Id: string) => {
 };
 
 const chatImageUploadIntoDB = async (file: Express.Multer.File) => {
-  const imageurl = `${config.backend_base_url}/uploads/${file.filename}`;
-  return imageurl;
+  const image = await uploadToDigitalOcean(file);
+  return image;
 };
-
 const getConversationListIntoDB = async (
   userId: string,
   page: number = 1,

@@ -1,17 +1,27 @@
+import { bullNotificationQueue } from "../../../helpers/redis";
 import prisma from "../../../shared/prisma";
 
 const createPost = async (payload: any) => {
-
-
   const result = await prisma.communityPost.create({
     data: {
       userId: payload.userId,
 
       content: payload.content,
     },
+    include: {
+      user: {
+        select: {
+          fullName: true,
+          email: true,
+          profileImage: true,
+        },
+      },
+    },
+  });
+  bullNotificationQueue.add("bull-notification-send", {
+    communityPost:result,
   });
 
-  
   return result;
 };
 const getAllPost = async (userId: string) => {
@@ -146,7 +156,6 @@ const getUserPost = async (userId: string) => {
   return result;
 };
 const postComment = async (payload: any) => {
-
   const result = await prisma.comment.create({
     data: {
       parentCommentId: payload.parentCommentId,

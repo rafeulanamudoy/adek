@@ -3,45 +3,56 @@ import admin from "../../../helpers/firebaseAdmin";
 
 import prisma from "../../../shared/prisma";
 
-const sendSingleNotification = async ({ email, body, title }: any) => {
+const sendSingleNotification = async ({ id, body, title }: any) => {
   const user = await prisma.user.findUnique({
-    where: { email: email },
+    where: { id: id },
   });
 
-  if (!user?.fcmToken) {
-    throw new ApiError(404, "User not found with FCM token");
-  }
-
-  const message = {
-    notification: {
-      body: body,
-      title: title,
-    },
-    token: user.fcmToken,
-  };
-
+  // Always save the notification in the database
   await prisma.notifications.create({
     data: {
-      receiverId: user.id,
-      title: title,
+      receiverId: id,
+      title,
       body,
     },
   });
 
+  // If no FCM token, exit gracefully — no error
+  if (!user?.fcmToken) {
+    return {
+      message: "Notification saved, but FCM token not available.",
+      sent: false,
+    };
+  }
+
+  const message = {
+    notification: {
+      body,
+      title,
+    },
+    token: user.fcmToken,
+  };
+
   try {
     const response = await admin.messaging().send(message);
 
-    return response;
+    return {
+      message: "Notification sent successfully.",
+      response,
+      sent: true,
+    };
   } catch (error: any) {
-    if (error.code === "messaging/invalid-registration-token") {
-      throw new ApiError(400, "Invalid FCM registration token");
-    } else if (error.code === "messaging/registration-token-not-registered") {
-      throw new ApiError(404, "FCM token is no longer registered");
-    } else {
-      throw new ApiError(500, "Failed to send notification");
-    }
+    // Log error but still return success for DB save
+    console.error("FCM send error:", error);
+
+    return {
+      message: "Notification saved in DB but failed to send via FCM.",
+      error: error.message,
+      sent: false,
+    };
   }
 };
+
 
 const sendMultipulNotifications = async (
   body: string,

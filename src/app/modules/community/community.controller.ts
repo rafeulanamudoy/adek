@@ -11,7 +11,7 @@ const createPost = catchAsync(async (req: Request, res: Response) => {
   const files = req.files as {
     [fieldname: string]: Express.Multer.File[];
   };
-console.log(req.body,"check body from controller")
+
   const result = await communityService.createPost({
     ...req.body,
   });

@@ -7,6 +7,8 @@ import { userRoute } from "../modules/user/user.routes";
 import { adminRoute } from "../modules/admin/admin.route";
 import { communityRoute } from "../modules/community/community.route";
 import { groupRoute } from "../modules/group/group.route";
+import path from "path";
+import { notificationRoute } from "../modules/notifications/notification.route";
 
 const router = express.Router();
 
@@ -34,6 +36,11 @@ const moduleRoutes = [
   {
     path: "/group",
     route: groupRoute,
+  },
+
+  {
+    path: "/notification",
+    route: notificationRoute,
   },
 ];
 

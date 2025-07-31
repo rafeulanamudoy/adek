@@ -10,6 +10,8 @@ import uploadToDigitalOcean from "./uploadToDigitalOcean";
 import prisma from "../shared/prisma";
 import { constructFromSymbol } from "date-fns/constants";
 import { RedisMessage } from "../interfaces/common";
+import { notificationServices } from "../app/modules/notifications/notification.service";
+
 
 // Redis Configuration
 const redisOptions: RedisOptions = {
@@ -46,16 +48,17 @@ const bullNotificationQueue = new Queue("bull-notification-send", {
   connection: redis,
 });
 
-// const otpPhoneWorker = new Worker(
-//   "otp-queue-phone",
-//   async (job) => {
-//     const { phoneNumber, otpCode } = job.data;
-//     const message = `Hi! your otp code is ${otpCode}. It’s valid for 5 minutes. Keep it safe and private!`;
-//     await sendMessage(phoneNumber, message);
-//     return "Otp end job completed";
-//   },
-//   { connection: redis }
-// );
+const bullNotificationWorker = new Worker(
+  "bull-notification-send",
+  async (job) => {
+    const { communityPost } = job.data;
+    const title = communityPost.user.profileImage;
+    const body = `${communityPost.user.fullName} has share a post in the community feed`;
+    console.log(communityPost,"ehc community post in bull mq")
+    notificationServices.sendMultipulNotifications(body, title);
+  },
+  { connection: redis }
+);
 
 const otpPhoneWorker = new Worker(
   "otp-queue-phone",
@@ -221,11 +224,17 @@ const messagePersistenceWorker = new Worker(
 otpPhoneWorker.on("completed", (job) => {
   console.log(`✅ OTP job completed: ${job.id}`);
 });
+bullNotificationWorker.on("completed", (job) => {
+  console.log(`✅ OTP job completed: ${job.id}`);
+});
 
 communityPostFileUploadWorker.on("completed", (job) => {
   console.log(`✅ community file upload job completed: ${job.id}`);
 });
 communityPostFileUploadWorker.on("failed", (job, err) => {
+  console.log(`❌ community file upload: ${job?.id}`, err);
+});
+bullNotificationWorker.on("failed", (job, err) => {
   console.log(`❌ community file upload: ${job?.id}`, err);
 });
 otpEmailWorker.on("failed", (job, err) => {
@@ -234,6 +243,10 @@ otpEmailWorker.on("failed", (job, err) => {
 
 otpEmailWorker.on("completed", (job) => {
   console.log(`✅ OTP job completed: ${job.id}`);
+});
+
+bullNotificationWorker.on("completed", (job) => {
+  console.log(`✅ bull notification job completed: ${job.id}`);
 });
 
 otpPhoneWorker.on("failed", (job, err) => {

@@ -29,6 +29,17 @@ async function handleJoinPrivateChat(
   chatRooms: Map<string, Set<ExtendedWebSocket>>
 ) {
   const { userId, user2Id } = parsedData;
+    for (const [roomId, sockets] of chatRooms.entries()) {
+    if (sockets.has(ws)) {
+      sockets.delete(ws);
+
+      
+      if (sockets.size === 0) {
+        chatRooms.delete(roomId);
+      }
+    }
+  }
+
   const conversation = await chatService.createConversationIntoDB(
     userId,
     user2Id
