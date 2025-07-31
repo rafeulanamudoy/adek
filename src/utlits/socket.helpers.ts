@@ -74,13 +74,13 @@ async function storeAndSendPrivateMessage(
 ) {
   try {
     const timestamp = new Date().toISOString();
+
+  
     const [senderDetails, receiverDetails] = await Promise.all([
       redisSocketService.getUserDetails(senderId),
       redisSocketService.getUserDetails(receiverId),
     ]);
-
-    // console.log(senderDetails,"check sender details")
-    // console.log(receiverDetails,"check reciver details")
+ 
 
     const messagePayload = {
       id: new ObjectId().toString(),
@@ -94,8 +94,6 @@ async function storeAndSendPrivateMessage(
     };
 
     const chatRoom = chatRooms.get(conversationId);
- 
-
 
 
     if (chatRoom) {
@@ -113,15 +111,12 @@ async function storeAndSendPrivateMessage(
         }
       }
     }
+  
 
     const redisKey = `chat:messages:${conversationId}`;
-    const messageObject = {
-      ...messagePayload,
-      conversationId,
-    };
+    const messageObject = { ...messagePayload, conversationId };
 
     const keyType = await redis.type(redisKey);
-
     if (keyType !== "zset" && keyType !== "none") {
       await redis.del(redisKey);
     }
@@ -132,30 +127,23 @@ async function storeAndSendPrivateMessage(
       JSON.stringify(messageObject)
     );
     await redis.hincrby(`conversation:unseen:${conversationId}`, receiverId, 1);
+   
+
+
     await redisSocketService.updateConversationList(
       senderId,
       receiverId,
       conversationId,
       content
     );
-    await prisma.conversation.update({
-      where: {
-        id: conversationId,
-      },
-      data: {
-        lastMessage: content ? content : imageUrl,
-        status: ConversationStatus.ACTIVE,
-      },
-    });
-
+ 
     const [senderConversationList, receiverConversationList] =
       await Promise.all([
         redisSocketService.getConversationListFromRedis(senderId, 1, 10),
         redisSocketService.getConversationListFromRedis(receiverId, 1, 10),
       ]);
 
-    const updatedLists = [senderId, receiverId];
-    updatedLists.forEach((userId) => {
+    [senderId, receiverId].forEach((userId) => {
       const socket = activeUsers.get(userId);
       if (socket && socket.readyState === socket.OPEN) {
         socket.send(
@@ -170,9 +158,17 @@ async function storeAndSendPrivateMessage(
       }
     });
 
+
     setImmediate(async () => {
+      await  prisma.conversation.update({
+      where: { id: conversationId },
+      data: {
+        lastMessage: content ? content : imageUrl,
+        status: ConversationStatus.ACTIVE,
+      },
+    });
+  
       const listLength = await redis.zcard(redisKey);
-      console.log(listLength, "check message list length");
       if (listLength >= MAX_REDIS_MESSAGES) {
         await messagePersistenceQueue.add(
           "persistMessagesToDB",
@@ -186,6 +182,7 @@ async function storeAndSendPrivateMessage(
           }
         );
       }
+  
     });
   } catch (error: any) {
     ws.send(
@@ -196,6 +193,7 @@ async function storeAndSendPrivateMessage(
     );
   }
 }
+
 
 function handleDisconnect(ws: ExtendedWebSocket) {
   try {

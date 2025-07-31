@@ -4,10 +4,8 @@ import {
   ExtendedWebSocket,
   MessageTypes,
   storeAndSendPrivateMessage,
-
 } from "./socket.helpers";
 import { redisSocketService } from "./socket.redis";
-
 
 export const handleJoinApp = async (
   ws: ExtendedWebSocket,
@@ -16,7 +14,7 @@ export const handleJoinApp = async (
 ): Promise<void> => {
   ws.userId = userId;
   activeUsers.set(userId, ws);
-  // await redisSocketService.storeUserConnection(userId);
+  await redisSocketService.storeUserConnection(userId);
   ws.send(
     JSON.stringify({
       type: MessageTypes.AUTH_SUCCESS,
@@ -58,11 +56,17 @@ async function handleSendPrivateMessage(
   ws: ExtendedWebSocket,
   parsedData: any
 ) {
+ 
+
   const { userId, receiverId, content, imageUrl } = parsedData;
   const senderSocket = activeUsers.get(userId);
   const conversationId = senderSocket?.chatroomId || ws.chatroomId;
+
+ 
+
   try {
     if (conversationId) {
+      
       await storeAndSendPrivateMessage(
         ws,
         userId,
@@ -71,6 +75,7 @@ async function handleSendPrivateMessage(
         imageUrl,
         conversationId
       );
+     
     } else {
       ws.send(
         JSON.stringify({

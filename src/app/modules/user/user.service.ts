@@ -604,9 +604,11 @@ const getOtherUserProfile = async (userId: string) => {
     select: {
       id: true,
       fullName: true,
+      
       Profile: {
         select: {
           branch: true,
+          desc:true
         },
       },
       profileImage: true,

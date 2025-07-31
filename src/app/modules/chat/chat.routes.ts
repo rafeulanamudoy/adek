@@ -6,11 +6,7 @@ import { fileUploader } from "../../../helpers/fileUploader";
 const router = Router();
 
 router.get("/convarstion-list", auth(), chatController.getConversationList);
-router.get(
-  "/get-single-message/:receiverId",
-  auth(),
-  chatController.getSingleMessageList
-);
+
 router.post(
   "/chat-image-upload",
   auth(),

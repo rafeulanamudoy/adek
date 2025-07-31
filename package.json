@@ -10,7 +10,7 @@
     "postinstall": "prisma generate"
   },
   "keywords": [],
-  "author": "Ruhul-Amin",
+  "author": "Rafeul anam Udoy",
   "license": "ISC",
   "description": "backend-template",
   "devDependencies": {
