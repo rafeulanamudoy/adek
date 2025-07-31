@@ -1,4 +1,4 @@
-import { Gender, UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import prisma from "../../shared/prisma";
 
