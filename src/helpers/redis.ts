@@ -42,6 +42,20 @@ const messagePersistenceQueue = new Queue("messagePersistenceQueue", {
 const communityPostFileQueue = new Queue("community-post-queue", {
   connection: redis,
 });
+const bullNotificationQueue = new Queue("bull-notification-send", {
+  connection: redis,
+});
+
+// const otpPhoneWorker = new Worker(
+//   "otp-queue-phone",
+//   async (job) => {
+//     const { phoneNumber, otpCode } = job.data;
+//     const message = `Hi! your otp code is ${otpCode}. It’s valid for 5 minutes. Keep it safe and private!`;
+//     await sendMessage(phoneNumber, message);
+//     return "Otp end job completed";
+//   },
+//   { connection: redis }
+// );
 
 const otpPhoneWorker = new Worker(
   "otp-queue-phone",
@@ -62,7 +76,6 @@ const communityPostFileUploadWorker = new Worker(
     const updates: { imageUrl?: string; videoUrl?: string } = {};
 
     if (image) {
-  
       image.buffer = Buffer.from(image.buffer.data);
 
       const imageUrl = await uploadToDigitalOcean(image);
@@ -205,7 +218,6 @@ const messagePersistenceWorker = new Worker(
   { connection: redis }
 );
 
-
 otpPhoneWorker.on("completed", (job) => {
   console.log(`✅ OTP job completed: ${job.id}`);
 });
@@ -261,10 +273,14 @@ export async function cleanQueues() {
     assignJobQueue.clean(0, 1000, "failed"),
     assignJobQueue.clean(0, 1000, "delayed"),
     assignJobQueue.clean(0, 1000, "wait"),
-     messagePersistenceQueue.clean(0, 1000, "completed"),
+    messagePersistenceQueue.clean(0, 1000, "completed"),
     messagePersistenceQueue.clean(0, 1000, "failed"),
     messagePersistenceQueue.clean(0, 1000, "delayed"),
     messagePersistenceQueue.clean(0, 1000, "wait"),
+    bullNotificationQueue.clean(0, 1000, "completed"),
+    bullNotificationQueue.clean(0, 1000, "failed"),
+    bullNotificationQueue.clean(0, 1000, "delayed"),
+    bullNotificationQueue.clean(0, 1000, "wait"),
   ]);
 }
 async function handleJobFailure(job: any, err: any) {
@@ -294,6 +310,7 @@ process.on("SIGINT", async () => {
   await conversationListWorker.close();
   await communityPostFileQueue.close();
   await messagePersistenceWorker.close();
+  await bullNotificationQueue.close();
   console.log("✅ Workers and Queues closed gracefully");
   process.exit(0);
 });
@@ -306,5 +323,6 @@ export {
   conversationListQueue,
   assignJobQueue,
   communityPostFileQueue,
-  messagePersistenceQueue
+  messagePersistenceQueue,
+  bullNotificationQueue,
 };

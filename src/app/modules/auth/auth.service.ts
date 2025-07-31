@@ -79,7 +79,14 @@ const loginUserIntoDB = async (payload: any) => {
     config.jwt.jwt_secret as string,
     config.jwt.expires_in as string
   );
-  const { password, status, createdAt, updatedAt, socialLoginType,...userInfo } = user;
+  const {
+    password,
+    status,
+    createdAt,
+    updatedAt,
+    socialLoginType,
+    ...userInfo
+  } = user;
 
   return {
     accessToken,
@@ -303,7 +310,6 @@ const socialLoginIntoDb = async (payload: any) => {
 
   const existingUser = await prisma.user.findUnique({
     where: { email },
-   
   });
 
   if (existingUser) {
@@ -320,8 +326,14 @@ const socialLoginIntoDb = async (payload: any) => {
       config.jwt.expires_in as string
     );
 
-
-    const { password,createdAt,updatedAt,socialLoginType,status, ...userInfo } = existingUser;
+    const {
+      password,
+      createdAt,
+      updatedAt,
+      socialLoginType,
+      status,
+      ...userInfo
+    } = existingUser;
 
     switch (existingUser.status) {
       case UserStatus.PENDING:
@@ -329,7 +341,13 @@ const socialLoginIntoDb = async (payload: any) => {
         return { accessToken: null, userInfo };
 
       case UserStatus.ACTIVE:
-        return { accessToken, userInfo };
+        return {
+          accessToken,
+          userInfo: {
+            userId: existingUser.id,
+            isProfile: existingUser.isProfile,
+          },
+        };
 
       default:
         throw new ApiError(
@@ -346,7 +364,7 @@ const socialLoginIntoDb = async (payload: any) => {
     fcmToken: payload.fcmToken,
     profileImage: payload.profileImage || "",
     role: payload.role,
-    status: UserStatus.PENDING,
+    status: UserStatus.ACTIVE,
   };
 
   const newUser = await prisma.user.create({
@@ -359,7 +377,10 @@ const socialLoginIntoDb = async (payload: any) => {
     config.jwt.expires_in as string
   );
 
-  return { accessToken, status: UserStatus.PENDING };
+  return {
+    accessToken,
+    userInfo: { userId: newUser.id, isProfile: newUser.isProfile },
+  };
 };
 
 export const authService = {

@@ -72,9 +72,31 @@ const joinGroup=catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+const getUserGroup=catchAsync(async (req: Request, res: Response) => {
+  
+
+
+  
+  
+  const result = await groupService.getUserGroup(
+    
+    req.user.id,
+  
+    
+  );
+
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: "Group retrived successfully",
+    data: result,
+  });
+});
 export const groupController = {
   createGroup,
   deleteGroup,
   updateGroup,
-  joinGroup
+  joinGroup,
+  getUserGroup
 };

@@ -145,10 +145,53 @@ const joinGroup = async (userId: string, groupId: string) => {
 
   return newMembership;
 };
+const getUserGroup = async (userId: string) => {
+  const groups = await prisma.group.findMany({
+    where: {
+      OR: [
+        { adminId: userId },
+        {
+          members: {
+            some: {
+              userId: userId, 
+            },
+          },
+        },
+      ],
+    },
+    include: {
+      admin: {
+        select: {
+          id: true,
+          fullName: true,
+          profileImage: true,
+        },
+      },
+      members: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              profileImage: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy:{
+      updatedAt:"desc"
+    }
+  });
+
+  return groups;
+};
 
 export const groupService = {
   createGroupIntoDB,
   updateGroupInDB,
   deleteGroupFromDB,
   joinGroup,
+  getUserGroup,
+  
 };

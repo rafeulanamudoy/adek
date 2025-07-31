@@ -10,7 +10,13 @@ import handleWebHook from "./helpers/stripe.webhook";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { ExpressAdapter } from "@bull-board/express";
 import { createBullBoard } from "@bull-board/api";
-import { communityPostFileQueue, otpQueueEmail } from "./helpers/redis";
+import {
+  bullNotificationQueue,
+  communityPostFileQueue,
+  conversationListQueue,
+  messagePersistenceQueue,
+  otpQueueEmail,
+} from "./helpers/redis";
 // import {
 //   assignJobQueue,
 //   conversationListQueue,
@@ -75,6 +81,9 @@ createBullBoard({
   queues: [
     new BullMQAdapter(otpQueueEmail),
     new BullMQAdapter(communityPostFileQueue),
+    new BullMQAdapter(bullNotificationQueue),
+    new BullMQAdapter(conversationListQueue),
+    new BullMQAdapter(messagePersistenceQueue),
   ],
   serverAdapter,
 });

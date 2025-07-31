@@ -75,12 +75,10 @@ async function storeAndSendPrivateMessage(
   try {
     const timestamp = new Date().toISOString();
 
-  
     const [senderDetails, receiverDetails] = await Promise.all([
       redisSocketService.getUserDetails(senderId),
       redisSocketService.getUserDetails(receiverId),
     ]);
- 
 
     const messagePayload = {
       id: new ObjectId().toString(),
@@ -94,7 +92,6 @@ async function storeAndSendPrivateMessage(
     };
 
     const chatRoom = chatRooms.get(conversationId);
-
 
     if (chatRoom) {
       for (const clientSocket of chatRoom) {
@@ -111,7 +108,21 @@ async function storeAndSendPrivateMessage(
         }
       }
     }
-  
+
+    // const redisKey = `chat:messages:${conversationId}`;
+    // const messageObject = { ...messagePayload, conversationId };
+
+    // const keyType = await redis.type(redisKey);
+    // if (keyType !== "zset" && keyType !== "none") {
+    //   await redis.del(redisKey);
+    // }
+
+    // await redis.zadd(
+    //   redisKey,
+    //   new Date(timestamp).getTime(),
+    //   JSON.stringify(messageObject)
+    // );
+    // await redis.hincrby(`conversation:unseen:${conversationId}`, receiverId, 1);
 
     const redisKey = `chat:messages:${conversationId}`;
     const messageObject = { ...messagePayload, conversationId };
@@ -126,9 +137,18 @@ async function storeAndSendPrivateMessage(
       new Date(timestamp).getTime(),
       JSON.stringify(messageObject)
     );
-    await redis.hincrby(`conversation:unseen:${conversationId}`, receiverId, 1);
-   
 
+    const isReceiverInRoom =
+      chatRoom &&
+      [...chatRoom].some((clientSocket) => clientSocket.userId === receiverId);
+
+    if (!isReceiverInRoom) {
+      await redis.hincrby(
+        `conversation:unseen:${conversationId}`,
+        receiverId,
+        1
+      );
+    }
 
     await redisSocketService.updateConversationList(
       senderId,
@@ -136,7 +156,7 @@ async function storeAndSendPrivateMessage(
       conversationId,
       content
     );
- 
+
     const [senderConversationList, receiverConversationList] =
       await Promise.all([
         redisSocketService.getConversationListFromRedis(senderId, 1, 10),
@@ -158,16 +178,15 @@ async function storeAndSendPrivateMessage(
       }
     });
 
-
     setImmediate(async () => {
-      await  prisma.conversation.update({
-      where: { id: conversationId },
-      data: {
-        lastMessage: content ? content : imageUrl,
-        status: ConversationStatus.ACTIVE,
-      },
-    });
-  
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data: {
+          lastMessage: content ? content : imageUrl,
+          status: ConversationStatus.ACTIVE,
+        },
+      });
+
       const listLength = await redis.zcard(redisKey);
       if (listLength >= MAX_REDIS_MESSAGES) {
         await messagePersistenceQueue.add(
@@ -182,7 +201,6 @@ async function storeAndSendPrivateMessage(
           }
         );
       }
-  
     });
   } catch (error: any) {
     ws.send(
@@ -193,7 +211,6 @@ async function storeAndSendPrivateMessage(
     );
   }
 }
-
 
 function handleDisconnect(ws: ExtendedWebSocket) {
   try {

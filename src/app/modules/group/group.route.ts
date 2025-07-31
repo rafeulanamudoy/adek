@@ -24,5 +24,6 @@ router.patch(
 );
 router.delete("/delete/:groupId", auth(), groupController.deleteGroup);
 router.patch("/join-group/:groupId", auth(), groupController.joinGroup);
+router.get("/get-user-group",auth(),groupController.getUserGroup)
 
 export const groupRoute = router;

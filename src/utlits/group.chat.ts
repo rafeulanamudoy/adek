@@ -5,7 +5,7 @@ import {
   MessageTypes,
 } from "./socket.helpers";
 
-// Handle join group
+
 async function handleJoinGroup(
   ws: ExtendedWebSocket,
   parsedData: any,
@@ -24,7 +24,7 @@ async function handleJoinGroup(
   ws.send(JSON.stringify({ type: "joinSuccess", groupId }));
 }
 
-// Handle send group message
+
 async function handleSendGroupMessage(
   parsedData: any,
   groupRooms: Map<string, Set<ExtendedWebSocket>>
