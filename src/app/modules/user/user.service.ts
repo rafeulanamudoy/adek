@@ -604,9 +604,72 @@ const getOtherUserProfile = async (userId: string) => {
     select: {
       id: true,
       fullName: true,
-      Profile: true,
+      Profile: {
+        select: {
+          branch: true,
+        },
+      },
       profileImage: true,
       coverPhoto: true,
+      CommunityPost: {
+        select: {
+          id: true,
+          content: true,
+          likes: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  fullName: true,
+                  profileImage: true,
+                },
+              },
+            },
+          },
+          imageUrl: true,
+          videoUrl: true,
+          createdAt: true,
+          user: {
+            select: {
+              fullName: true,
+              profileImage: true,
+            },
+          },
+
+          comments: {
+            where: {
+              parentCommentId: null,
+            },
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              user: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  profileImage: true,
+                },
+              },
+
+              replies: {
+                select: {
+                  id: true,
+                  content: true,
+                  createdAt: true,
+                  user: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      profileImage: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
 

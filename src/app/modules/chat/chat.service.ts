@@ -3,6 +3,7 @@ import config from "../../../config";
 import prisma from "../../../shared/prisma";
 import { conversationPrivateFields } from "../../../utlits/prisma.common.field";
 import { redis } from "../../../helpers/redis";
+import { constructFromSymbol } from "date-fns/constants";
 
 const createConversationIntoDB = async (user1Id: string, user2Id: string) => {
   try {
@@ -56,7 +57,24 @@ const getConversationListIntoDB = async (
       },
 
       select: {
-        ...conversationPrivateFields,
+        id: true,
+        lastMessage: true,
+        updatedAt: true,
+        user1Id: true,
+        user1: {
+          select: {
+            id: true,
+            profileImage: true,
+            fullName: true,
+          },
+        },
+        user2: {
+          select: {
+            id: true,
+            profileImage: true,
+            fullName: true,
+          },
+        },
         _count: {
           select: {
             privateMessage: {
@@ -68,7 +86,7 @@ const getConversationListIntoDB = async (
           },
         },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
       skip,
       take: limit,
     }),
@@ -87,10 +105,8 @@ const getConversationListIntoDB = async (
         type: "private",
         participants: {
           userId: otherUser?.id || "",
-          username:
-            otherUser?.passenger?.fullName || otherUser?.driver?.fullName || "",
-          avater:
-            otherUser?.passenger?.avater || otherUser?.driver?.avater || "",
+          username: otherUser?.fullName || "",
+          image: otherUser?.profileImage,
         },
         lastMessage: conv?.lastMessage || "",
         lastMessageTime: conv?.updatedAt || new Date(0),
@@ -111,6 +127,7 @@ const getConversationListIntoDB = async (
   };
   return result;
 };
+
 
 const getSingleMessageList = async (
   userId: string,
@@ -242,6 +259,7 @@ const getMergedMessageList = async (
     const redisEnd = Math.min(end, redisCount - 1);
     const redisRaw = await redis.zrange(redisKey, start, redisEnd);
     const redisMessages = redisRaw.map((msg) => JSON.parse(msg));
+    console.log(redisMessages,"check redis messages")
 
     const remaining = limit - redisMessages.length;
     let dbMessages: any[] = [];

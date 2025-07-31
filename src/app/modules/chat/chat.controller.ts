@@ -33,15 +33,15 @@ const chatImageUpload = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
 const getSingleMessageList = catchAsync(async (req: Request, res: Response) => {
-  let { page = 1, limit = 10 } = req.query;
-  const receiverId = req.params.receiverId as string;
-  const userId = req.user.id as string;
+  let { page = 1, limit = 20 } = req.query;
+  const conversationId = req.params.conversationId as string;
   page = Number(page);
   limit = Number(limit);
-  const result = await chatService.getSingleMessageList(
-    userId,
-    receiverId,
+  const result = await chatService.getMergedMessageList(
+    conversationId,
+    req.user.id,
     page,
     limit
   );
@@ -50,7 +50,7 @@ const getSingleMessageList = catchAsync(async (req: Request, res: Response) => {
     statusCode: 200,
     success: true,
     message: "Message retrieved successfully",
-    data: result.result,
+    data: result.messages,
     meta: result.meta,
   });
 });
@@ -80,10 +80,26 @@ const getSingleGroupMessageList = catchAsync(
   }
 );
 
+const getMergedMessageList= catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await chatService.singleGroupMessageIntoDB(req);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Message retrieved successfully",
+      data: result.result,
+      meta: result.meta,
+    });
+  }
+);
+
+
 export const chatController = {
   getConversationList,
   getSingleMessageList,
   markMessagesAsRead,
   chatImageUpload,
-  getSingleGroupMessageList
+  getSingleGroupMessageList,
+  getMergedMessageList
 };

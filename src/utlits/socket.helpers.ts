@@ -94,9 +94,9 @@ async function storeAndSendPrivateMessage(
     };
 
     const chatRoom = chatRooms.get(conversationId);
-    const receiverSocket = activeUsers.get(receiverId);
+ 
 
-    console.log(receiverSocket, "check receiversokcet");
+
 
     if (chatRoom) {
       for (const clientSocket of chatRoom) {

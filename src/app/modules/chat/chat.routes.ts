@@ -27,5 +27,10 @@ router.get(
   auth(),
   chatController.getSingleGroupMessageList
 );
+router.get(
+  "/get-single-message/:conversationId",
+  auth(),
+  chatController.getSingleMessageList
+);
 
 export const chatRoute = router;
