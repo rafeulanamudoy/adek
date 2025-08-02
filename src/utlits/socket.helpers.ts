@@ -81,11 +81,7 @@ async function storeAndSendPrivateMessage(
       redisSocketService.getUserDetails(receiverId),
     ]);
 
-    console.log(
-      receiverDetails,
-      "check receiver deitals from store and send private message"
-    );
-
+  
     const messagePayload = {
       id: new ObjectId().toString(),
       senderId,
