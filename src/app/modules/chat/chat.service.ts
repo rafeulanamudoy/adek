@@ -129,7 +129,6 @@ const getConversationListIntoDB = async (
   return result;
 };
 
-
 const getSingleMessageList = async (
   userId: string,
   receiverId: string,
@@ -243,7 +242,6 @@ const getMergedMessageList = async (
 ) => {
   const redisKey = `chat:messages:${conversationId}`;
 
- 
   const [redisCount, dbCount] = await Promise.all([
     redis.zcard(redisKey),
     prisma.privateMessage.count({ where: { conversationId } }),
@@ -252,28 +250,26 @@ const getMergedMessageList = async (
   const total = redisCount + dbCount;
   const totalPage = Math.ceil(total / limit);
 
- 
-  const startIndex = total - (page * limit);
+  const startIndex = total - page * limit;
   const endIndex = startIndex + limit - 1;
 
   const messages: any[] = [];
 
   if (endIndex < redisCount) {
-
     const redisStart = redisCount - 1 - endIndex;
     const redisEnd = redisCount - 1 - startIndex;
 
     const redisRaw = await redis.zrevrange(redisKey, redisStart, redisEnd);
     const redisMessages = redisRaw.map((msg) => JSON.parse(msg));
+ 
     messages.push(...redisMessages);
   } else if (startIndex < redisCount) {
- 
     const redisStart = 0;
     const redisEnd = redisCount - 1 - startIndex;
 
     const redisRaw = await redis.zrevrange(redisKey, redisStart, redisEnd);
     const redisMessages = redisRaw.map((msg) => JSON.parse(msg));
-
+   console.log(redisMessages, "check redisMessages");
     const remaining = limit - redisMessages.length;
 
     const dbMessages = await prisma.privateMessage.findMany({
@@ -285,7 +281,6 @@ const getMergedMessageList = async (
 
     messages.push(...redisMessages, ...dbMessages);
   } else {
- 
     const dbSkip = startIndex - redisCount;
 
     const dbMessages = await prisma.privateMessage.findMany({
@@ -299,6 +294,7 @@ const getMergedMessageList = async (
   }
 
 
+
   return {
     messages,
     meta: {
@@ -309,7 +305,6 @@ const getMergedMessageList = async (
     },
   };
 };
-
 
 // const getMergedMessageList = async (
 //   conversationId: string,
@@ -335,7 +330,6 @@ const getMergedMessageList = async (
 //     const redisEnd = Math.min(end, redisCount - 1);
 //     const redisRaw = await redis.zrange(redisKey, start, redisEnd);
 //     const redisMessages = redisRaw.map((msg) => JSON.parse(msg));
-  
 
 //     const remaining = limit - redisMessages.length;
 //     let dbMessages: any[] = [];
@@ -395,5 +389,5 @@ export const chatService = {
   markMessagesAsRead,
   chatImageUploadIntoDB,
   singleGroupMessageIntoDB,
-  getMergedMessageList
+  getMergedMessageList,
 };
