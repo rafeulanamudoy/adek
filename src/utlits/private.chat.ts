@@ -1,4 +1,5 @@
 import { chatService } from "../app/modules/chat/chat.service";
+import prisma from "../shared/prisma";
 import { activeUsers, chatRooms } from "../socket";
 import {
   ExtendedWebSocket,
@@ -29,11 +30,10 @@ async function handleJoinPrivateChat(
   chatRooms: Map<string, Set<ExtendedWebSocket>>
 ) {
   const { userId, user2Id } = parsedData;
-    for (const [roomId, sockets] of chatRooms.entries()) {
+  for (const [roomId, sockets] of chatRooms.entries()) {
     if (sockets.has(ws)) {
       sockets.delete(ws);
 
-      
       if (sockets.size === 0) {
         chatRooms.delete(roomId);
       }
@@ -61,23 +61,30 @@ async function handleJoinPrivateChat(
       chatroomId,
     })
   );
+  setImmediate(async () => {
+    await prisma.privateMessage.updateMany({
+      where: {
+        conversationId: chatroomId,
+        receiverId: userId,
+        read: false,
+      },
+      data: {
+        read: true,
+      },
+    });
+  });
 }
 
 async function handleSendPrivateMessage(
   ws: ExtendedWebSocket,
   parsedData: any
 ) {
- 
-
   const { userId, receiverId, content, imageUrl } = parsedData;
   const senderSocket = activeUsers.get(userId);
   const conversationId = senderSocket?.chatroomId || ws.chatroomId;
 
- 
-
   try {
     if (conversationId) {
-      
       await storeAndSendPrivateMessage(
         ws,
         userId,
@@ -86,7 +93,6 @@ async function handleSendPrivateMessage(
         imageUrl,
         conversationId
       );
-     
     } else {
       ws.send(
         JSON.stringify({

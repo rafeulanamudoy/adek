@@ -299,17 +299,6 @@ const getMergedMessageList = async (
   }
 
 
-  await prisma.privateMessage.updateMany({
-    where: {
-      conversationId,
-      receiverId: userId,
-      read: false,
-    },
-    data: {
-      read: true,
-    },
-  });
-
   return {
     messages,
     meta: {
