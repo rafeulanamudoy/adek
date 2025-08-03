@@ -92,10 +92,7 @@ const communityPostFileUploadWorker = new Worker(
       updates.videoUrl = videoUrl;
     }
 
-    await prisma.communityPost.update({
-      where: { id: postId },
-      data: updates,
-    });
+  
 
     return `Post ${postId} updated with uploaded files`;
   },

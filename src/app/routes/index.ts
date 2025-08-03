@@ -5,7 +5,7 @@ import { chatRoute } from "../modules/chat/chat.routes";
 
 import { userRoute } from "../modules/user/user.routes";
 import { adminRoute } from "../modules/admin/admin.route";
-import { communityRoute } from "../modules/community/community.route";
+
 import { groupRoute } from "../modules/group/group.route";
 import path from "path";
 import { notificationRoute } from "../modules/notifications/notification.route";
@@ -29,10 +29,7 @@ const moduleRoutes = [
     path: "/admin",
     route: adminRoute,
   },
-  {
-    path: "/community",
-    route: communityRoute,
-  },
+
   {
     path: "/group",
     route: groupRoute,

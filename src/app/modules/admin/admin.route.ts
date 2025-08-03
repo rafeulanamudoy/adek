@@ -8,7 +8,7 @@ import { UserRole } from "@prisma/client";
 import auth from "../../middlewares/auth";
 import { fileUploader } from "../../../helpers/fileUploader";
 import { parseBodyData } from "../../middlewares/parseBodyData";
-import { adminValidation } from "./admin.validation";
+
 
 const router = express.Router();
 
@@ -27,93 +27,8 @@ router.post(
   fileUploader.articleImage,
   parseBodyData,
 
-  validateRequest(adminValidation.createArticle),
-  adminController.createArticle
-);
-router.get(
-  "/get-all-article",
-  auth(),
-  adminController.getAllArticle
-);
-router.get("/get-single-article/:id", auth(), adminController.getArticleById);
-router.patch(
-  "/update-single-article/:id",
 
-  auth(UserRole.ADMIN),
-  fileUploader.articleImage,
-  parseBodyData,
-  adminController.updateSingleArticle
-);
-router.delete(
-  "/delete-single-article/:id",
-  auth(UserRole.ADMIN),
-  adminController.deleteSingleArticle
-);
-
-//ground sound route
-router.post(
-  "/create-ground-sound",
-  auth(UserRole.ADMIN),
-  fileUploader.uploadGroundSound,
-  parseBodyData,
-
-  validateRequest(adminValidation.createGroundingSound),
-  adminController.createGroundingSound
-);
-router.patch(
-  "/update-single-ground-sound/:id",
-  auth(UserRole.ADMIN),
-  fileUploader.uploadGroundSound,
-  parseBodyData,
-  adminController.updateSingleGroundSound
-);
-router.get(
-  "/get-all-ground",
-  auth(),
-  adminController.getAllGroundingSound
-);
-router.get(
-  "/get-single-sound/:id",
-  auth(),
-  adminController.getSingleGroundSoundById
-);
-
-router.delete(
-  "/delete-single-ground/:id",
-  auth(UserRole.ADMIN),
-  adminController.deleteSingleGroundSound
-);
-
-//goal route
-
-router.post(
-  "/create-goal",
-  auth(UserRole.ADMIN),
-  fileUploader.goalImage,
-  parseBodyData,
-
-  validateRequest(adminValidation.createGoal),
-  adminController.createGoal
-);
-router.get("/get-all-goal", auth(), adminController.getAllGoal);
-router.get("/get-single-goal/:id", auth(), adminController.getGoalById);
-
-router.patch(
-  "/update-single-goal/:id",
-  auth(UserRole.ADMIN),
-  fileUploader.goalImage,
-  parseBodyData,
-  adminController.updateSingGoal
-);
-router.delete(
-  "/delete-single-goal/:id",
-  auth(UserRole.ADMIN),
-  adminController.deleteSingleGoal
-);
-router.get(
-  "/get-dashoboard-data",
-  auth(UserRole.ADMIN),
-  adminController.getDashoboardData
+  
 );
 
 export const adminRoute = router;

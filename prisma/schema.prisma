@@ -39,16 +39,53 @@ model User {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   Profile       Profile?
-  Journal       Journal[]
-  CommunityPost CommunityPost[]
-  Comment       Comment[]
-  Like          Like[]
-  TrackGoal     TrackGoal[]
+ 
+
   Group         Group[]
   UserGroup     UserGroup[]
   GroupMessage  GroupMessage[]
 
   @@map("users")
+}
+
+model Profile {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+
+
+  userId    String   @unique @db.ObjectId
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profile")
+}
+
+model Admin {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  nickName String @unique
+  password String
+  email    String @unique
+  userId   String @unique @db.ObjectId
+  user     User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Otp {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  otpCode   String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("otps")
 }
 
 model Group {
@@ -97,139 +134,12 @@ model GroupMessage {
   @@map("group_message")
 }
 
-model Journal {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String @db.ObjectId
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  content   String
-  entryDate DateTime
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  @@map("journals")
-}
 
-model Profile {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  branch          Branch
-  serviceYear     ServiceYear
-  desc            String
-  goal            Goal[]            @default([])
-  cause           Cause[]
-  emotionalReason EmotionalReason[]
-  mood            Mood[]            @default([])
 
-  userId    String   @unique @db.ObjectId
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("profile")
-}
-
-model Article {
-  id              String            @id @default(auto()) @map("_id") @db.ObjectId
-  mood            Mood[]
-  goal            Goal[]
-  cause           Cause[]
-  emotionalReason EmotionalReason[]
-  title           String
-  time            String
-  content         Json
-  articleImage    String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("article")
-}
-
-model GroundSound {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-
-  mood            Mood[]
-  goal            Goal[]
-  cause           Cause[]
-  emotionalReason EmotionalReason[]
-  soundName       String
-  authority       String
-  time            String
-  soundAudioFile  String
-  soundImage      String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("groundSound")
-}
-
-model GoalModel {
-  id              String            @id @default(auto()) @map("_id") @db.ObjectId
-  mood            Mood[]
-  goal            Goal[]
-  cause           Cause[]
-  emotionalReason EmotionalReason[]
-
-  title     String
-  subtitle  String
-  goalImage String
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime    @updatedAt
-  TrackGoal TrackGoal[]
-
-  @@map("goal")
-}
-
-model TrackGoal {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-
-  userId String @db.ObjectId
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  goalId String    @db.ObjectId
-  goal   GoalModel @relation(fields: [goalId], references: [id], onDelete: Cascade)
-
-  isCompleted Boolean   @default(false)
-  completedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, goalId])
-  @@map("trackGoal")
-}
-
-model Admin {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-
-  nickName String @unique
-  password String
-  email    String @unique
-  userId   String @unique @db.ObjectId
-  user     User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("admins")
-}
-
-model Otp {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @unique @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  otpCode   String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("otps")
-}
 
 model PrivateMessage {
   id             String       @id @default(auto()) @map("_id") @db.ObjectId
@@ -276,60 +186,6 @@ model Notifications {
   @@map("notifications")
 }
 
-model CommunityPost {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String @db.ObjectId
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  content  String?
-  imageUrl String?
-  videoUrl String?
-
-  comments Comment[] @relation("PostComments")
-
-  likes Like[] @relation("PostMainLike")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("community_posts")
-}
-
-model Comment {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-
-  userId String @db.ObjectId
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  postId String?        @db.ObjectId
-  post   CommunityPost? @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
-
-  content String
-
-  parentCommentId String?   @db.ObjectId
-  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  replies         Comment[] @relation("CommentReplies")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("comments")
-}
-
-model Like {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  postId String @db.ObjectId
-  userId String @db.ObjectId
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  post CommunityPost @relation("PostMainLike", fields: [postId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([postId, userId])
-  @@map("likes")
-}
 
 enum UserStatus {
   ACTIVE
@@ -343,57 +199,7 @@ enum UserRole {
   USER
 }
 
-enum Branch {
-  NAVY
-  AIR_FORCE
-  MARINE_CROPS
-  COAST_GUARD
-  SPACE_FORCE
-}
 
-enum ServiceYear {
-  FOUR_TO_SEVEN_YEARS
-  EIGHT_TO_TWELVE_YEARS
-  THIRTEEN_TOTWENTY_YEARS
-  TWENTY_PLUS_YEARS
-}
-
-enum Goal {
-  MANAGE_ANXIETY
-  REDUCE_STRESS
-  IMPROVE_MOOD
-  JOIN_COMMUNITY
-  IMPROVE_SLEEP
-  BOOST_CONFIDENCE
-  OTHER
-}
-
-enum Cause {
-  RELATIONSHIP_ISSUE
-  FINANCIAL_STRESS
-  HEALTH_CONCERN
-  CHANGING_LIFESTYLE
-  CIVILIAN_LIFE_ADJUSTMENT
-  ISOLATION
-  OTHER
-}
-
-enum EmotionalReason {
-  FLASHBACKS_OR_INTRUSIVE_THOUGHTS
-  FEELING_MISUNDERSTOOD_OR_JUDGED
-  POOR_SLEEP_OR_NIGHTMARES
-  ANEXIETY_FOR_NO_CLEAR_REASON
-  GUILT_OVER_PAST_DECISIONS
-  LACK_OF_EMOTIONAL_SUPPORT
-  OTHER
-}
-
-enum Mood {
-  HAPPY
-  DEPRESSED
-  NORMAL
-  SAD
-}
 
 enum ConversationStatus {
   ACTIVE
