@@ -361,7 +361,7 @@ const socialLoginIntoDb = async (payload: any) => {
     email,
     fullName: payload.fullName,
     socialLoginType: payload.socialLoginType,
-    fcmToken: payload.fcmToken,
+    fcmToken: payload.fcmToken || "",
     profileImage: payload.profileImage || "",
     role: payload.role,
     status: UserStatus.ACTIVE,

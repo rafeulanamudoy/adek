@@ -10,6 +10,7 @@ export const initiateSuperAdmin = async () => {
     password: "123456",
     role: UserRole.ADMIN,
     db: "1997-01-12T06:48:45.050Z",
+    phoneNumber: "+8801515635005",
   };
 
   const existingSuperAdmin = await prisma.user.findUnique({
@@ -25,12 +26,10 @@ export const initiateSuperAdmin = async () => {
       id: payload.id,
       email: payload.email,
       role: payload.role,
-    
+
       fullName: "admin",
       password: payload.password,
-   
-    
-
+      phoneNumber: payload.phoneNumber,
 
       admin: {
         create: {

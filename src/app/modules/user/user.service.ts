@@ -1,4 +1,4 @@
-import {  Prisma,  User } from "@prisma/client";
+import { Prisma, User } from "@prisma/client";
 import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
 import httpStatus from "http-status";
@@ -35,6 +35,9 @@ const createUser = async (payload: User) => {
         fullName: payload.fullName,
         email: payload.email.toLowerCase(),
         password: hashPassword,
+        phoneNumber: payload.phoneNumber,
+        companyName: payload.companyName || "",
+        role: payload.role,
       },
     });
 
@@ -64,9 +67,7 @@ const updateProfile = async (payload: any, userId: string) => {
       isProfile: true,
       profileImage: payload.profileImage,
       coverPhoto: payload.coverPhoto,
-      Profile: {
-       
-      },
+      Profile: {},
     },
     select: {
       id: true,
@@ -97,9 +98,6 @@ const getUserProfile = async (userId: string) => {
   return result;
 };
 
-
-
-
 const searchUser = async (
   page: number = 1,
   limit: number = 10,
@@ -107,8 +105,6 @@ const searchUser = async (
   filter: { branch?: string; serviceYear?: string } = {}
 ) => {
   const profileFilter: Prisma.ProfileWhereInput = {};
-
-  
 
   const additionalFilter: Prisma.UserWhereInput = {
     NOT: {
@@ -144,11 +140,6 @@ const searchUser = async (
   return { users };
 };
 
-
-
-
-
-
 const getOtherUserProfile = async (userId: string) => {
   const result = await prisma.user.findUnique({
     where: {
@@ -157,13 +148,10 @@ const getOtherUserProfile = async (userId: string) => {
     select: {
       id: true,
       fullName: true,
-      
-      Profile: {
-        
-      },
+
+      Profile: {},
       profileImage: true,
       coverPhoto: true,
-   
     },
   });
 

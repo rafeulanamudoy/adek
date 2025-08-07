@@ -14,11 +14,12 @@ model User {
 
   email String @unique
 
-  role     UserRole @default(USER)
-  password String?  @default("")
-
-  profileImage String @default("")
-  coverPhoto   String @default("")
+  role         UserRole 
+  password     String?  @default("")
+  companyName  String?
+  phoneNumber  String?
+  profileImage String   @default("")
+  coverPhoto   String   @default("")
 
   sentMessages     PrivateMessage[] @relation("SentMessages")
   receivedMessages PrivateMessage[] @relation("ReceivedMessages")
@@ -36,22 +37,19 @@ model User {
   status UserStatus @default(ACTIVE)
   Otp    Otp[]
 
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  Profile       Profile?
- 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Profile   Profile?
 
-  Group         Group[]
-  UserGroup     UserGroup[]
-  GroupMessage  GroupMessage[]
+  Group        Group[]
+  UserGroup    UserGroup[]
+  GroupMessage GroupMessage[]
 
   @@map("users")
 }
 
 model Profile {
   id String @id @default(auto()) @map("_id") @db.ObjectId
-
-
 
   userId    String   @unique @db.ObjectId
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -92,7 +90,7 @@ model Group {
   id           String         @id @default(auto()) @map("_id") @db.ObjectId
   name         String
   groupImage   String
-  description  String? @default("")
+  description  String?        @default("")
   adminId      String         @db.ObjectId
   admin        User           @relation(fields: [adminId], references: [id], onDelete: Cascade)
   members      UserGroup[]
@@ -133,13 +131,6 @@ model GroupMessage {
   @@index([groupId, senderId])
   @@map("group_message")
 }
-
-
-
-
-
-
-
 
 model PrivateMessage {
   id             String       @id @default(auto()) @map("_id") @db.ObjectId
@@ -186,7 +177,6 @@ model Notifications {
   @@map("notifications")
 }
 
-
 enum UserStatus {
   ACTIVE
   BLOCKED
@@ -197,9 +187,10 @@ enum UserStatus {
 enum UserRole {
   ADMIN
   USER
+  SELLER
+  BUYER
+  ALL
 }
-
-
 
 enum ConversationStatus {
   ACTIVE
@@ -208,5 +199,8 @@ enum ConversationStatus {
 
 enum SOCIALLOGINTYPES {
   GOOGLE
-  EMAIL_PASSWORD
+ 
+  FACEBOOK
+  APPLE
+   EMAIL_PASSWORD
 }
