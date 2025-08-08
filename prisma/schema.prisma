@@ -48,6 +48,7 @@ model User {
   @@map("users")
 }
 
+
 model Profile {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
@@ -130,6 +131,7 @@ model GroupMessage {
 
   @@index([groupId, senderId])
   @@map("group_message")
+  
 }
 
 model PrivateMessage {
